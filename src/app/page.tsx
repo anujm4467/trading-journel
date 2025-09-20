@@ -4,9 +4,7 @@ import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
 export default function Home() {
   return (
     <MainLayout>
-      <div className="p-6">
-        <DashboardOverview />
-      </div>
+      <DashboardOverview />
     </MainLayout>
   )
 }

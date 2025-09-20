@@ -14,6 +14,7 @@ import {
   Briefcase,
   Settings,
   FileDown,
+  Wallet,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
@@ -35,6 +36,12 @@ const navigationItems = [
     icon: FileText,
     description: 'Complete trade journal',
     badge: 0
+  },
+  {
+    name: 'Capital',
+    href: '/capital',
+    icon: Wallet,
+    description: 'Capital management'
   },
   {
     name: 'Analytics',

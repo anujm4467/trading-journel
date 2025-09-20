@@ -30,7 +30,7 @@ export function Logo({
   }
 
   return (
-    <div className={cn("flex items-center space-x-3", className)}>
+    <div className={cn("flex items-center justify-between w-full", className)}>
       {/* Logo Icon */}
       <div className="relative">
         <div className={cn(
@@ -48,19 +48,19 @@ export function Logo({
         )}
       </div>
       
-      {/* Logo Text */}
+      {/* Logo Text - Moved to right side */}
       {showText && (
-        <div>
+        <div className="flex flex-col items-end">
           <h1 className={cn(
-            "font-black bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent tracking-tight",
+            "font-black bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent tracking-tight leading-tight",
             textSizeClasses[size]
           )}>
             Anuj Investment Plan
           </h1>
-          <div className="flex items-center gap-2 -mt-1">
-            <div className="h-1 w-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">Professional Trading</p>
-            <div className="h-1 w-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"></div>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="h-0.5 w-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Professional Trading</p>
+            <div className="h-0.5 w-4 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"></div>
           </div>
         </div>
       )}

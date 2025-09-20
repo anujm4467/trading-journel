@@ -22,6 +22,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { formatCurrency, formatPercentage } from '@/utils/calculations'
+import { useCapital } from '@/hooks/useCapital'
 
 // Mock data - in real app, this would come from API
 const mockPositions = [
@@ -88,6 +89,7 @@ const mockSummary = {
 
 export function PortfolioOverview() {
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const { allocation } = useCapital()
 
   const handleRefresh = () => {
     setIsRefreshing(true)
@@ -239,6 +241,63 @@ export function PortfolioOverview() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Capital Allocation Section */}
+      {allocation && (
+        <Card className="backdrop-blur-sm bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border-indigo-200/50 dark:border-indigo-700/50 shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-2xl text-indigo-700 dark:text-indigo-300">
+              <span>💰</span>
+              Capital Allocation
+            </CardTitle>
+            <CardDescription className="text-lg text-indigo-600 dark:text-indigo-400">
+              Your trading capital distribution and performance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6 md:grid-cols-3">
+              {/* Total Capital */}
+              <div className="text-center p-6 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-indigo-200/50 dark:border-indigo-700/50">
+                <div className="text-3xl font-bold text-indigo-600 mb-2">
+                  {formatCurrency(allocation.totalCapital)}
+                </div>
+                <div className="text-sm text-indigo-600 dark:text-indigo-400 font-medium mb-2">Total Capital</div>
+                <div className={`text-lg font-bold ${allocation.totalPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {allocation.totalPnl >= 0 ? '+' : ''}{formatCurrency(allocation.totalPnl)} ({formatPercentage(allocation.totalReturn)})
+                </div>
+              </div>
+
+              {/* Equity Capital */}
+              <div className="text-center p-6 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
+                <div className="text-3xl font-bold text-blue-600 mb-2">
+                  {formatCurrency(allocation.equityCapital)}
+                </div>
+                <div className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-2">Equity Capital</div>
+                <div className={`text-lg font-bold ${allocation.equityPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {allocation.equityPnl >= 0 ? '+' : ''}{formatCurrency(allocation.equityPnl)} ({formatPercentage(allocation.equityReturn)})
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Available: {formatCurrency(allocation.availableEquity)}
+                </div>
+              </div>
+
+              {/* F&O Capital */}
+              <div className="text-center p-6 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-purple-200/50 dark:border-purple-700/50">
+                <div className="text-3xl font-bold text-purple-600 mb-2">
+                  {formatCurrency(allocation.fnoCapital)}
+                </div>
+                <div className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-2">F&O Capital</div>
+                <div className={`text-lg font-bold ${allocation.fnoPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {allocation.fnoPnl >= 0 ? '+' : ''}{formatCurrency(allocation.fnoPnl)} ({formatPercentage(allocation.fnoReturn)})
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Available: {formatCurrency(allocation.availableFno)}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Risk Alert */}
       {mockSummary.totalRisk > 10000 && (

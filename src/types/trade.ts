@@ -1,21 +1,23 @@
-import { TradeType, PositionType, InstrumentType, OptionType, ChargeType } from '@prisma/client'
+import { TradeType, PositionType, InstrumentType, OptionType, ChargeType, PoolType, TransactionType } from '@prisma/client'
 
 // Core Trade Types
 export interface Trade {
   id: string
-  tradeType: TradeType
-  entryDate: Date
+  tradeType?: TradeType
+  entryDate: Date | string
   entryPrice: number
   quantity: number
-  position: PositionType
+  position?: PositionType
   symbol: string
-  instrument: InstrumentType
-  exitDate?: Date | null
+  instrument?: InstrumentType
+  instrumentType?: 'EQUITY' | 'FUTURES' | 'OPTIONS'
+  side?: 'BUY' | 'SELL'
+  exitDate?: Date | string | null
   exitPrice?: number | null
   holdingDuration?: number | null
-  entryValue: number
+  entryValue?: number
   exitValue?: number | null
-  turnover: number
+  turnover?: number
   grossPnl?: number | null
   netPnl?: number | null
   totalCharges?: number | null
@@ -26,22 +28,35 @@ export interface Trade {
   rewardAmount?: number | null
   riskRewardRatio?: number | null
   confidenceLevel?: number | null
+  confidence?: number
   emotionalState?: string | null
   marketCondition?: string | null
+  planning?: string | null // Pre-trade planning notes
   brokerName?: string | null
-  customBrokerage: boolean
+  customBrokerage?: boolean
   brokerageType?: string | null
   brokerageValue?: number | null
   notes?: string | null
-  isDraft: boolean
-  createdAt: Date
-  updatedAt: Date
-  charges: TradeCharge[]
-  strategyTags: TradeStrategyTag[]
-  emotionalTags: TradeEmotionalTag[]
-  marketTags: TradeMarketTag[]
-  attachments: TradeAttachment[]
+  isDraft?: boolean
+  strategy?: string
+  createdAt: Date | string
+  updatedAt: Date | string
+  charges?: TradeCharge[] | {
+    brokerage: number
+    stt: number
+    exchange: number
+    sebi: number
+    stampDuty: number
+    gst: number
+    total: number
+  }
+  strategyTags?: TradeStrategyTag[]
+  emotionalTags?: TradeEmotionalTag[]
+  marketTags?: TradeMarketTag[]
+  attachments?: TradeAttachment[]
   optionsTrade?: OptionsTrade | null
+  hedgePosition?: HedgePosition | null
+  tags?: Array<{ id: string; name: string }>
 }
 
 export interface OptionsTrade {
@@ -52,6 +67,38 @@ export interface OptionsTrade {
   expiryDate: Date
   lotSize: number
   underlying: string
+}
+
+export interface HedgePosition {
+  id: string
+  tradeId: string
+  position: PositionType
+  entryDate: Date | string
+  entryPrice: number
+  quantity: number
+  exitDate?: Date | string | null
+  exitPrice?: number | null
+  entryValue: number
+  exitValue?: number | null
+  grossPnl?: number | null
+  netPnl?: number | null
+  totalCharges?: number | null
+  percentageReturn?: number | null
+  notes?: string | null
+  createdAt: Date | string
+  updatedAt: Date | string
+  charges?: HedgeCharge[]
+}
+
+export interface HedgeCharge {
+  id: string
+  hedgeId: string
+  chargeType: ChargeType
+  rate: number
+  baseAmount: number
+  amount: number
+  description?: string | null
+  createdAt: Date | string
 }
 
 export interface TradeCharge {
@@ -175,7 +222,7 @@ export interface AppSettings {
 
 // Form Types
 export interface TradeFormData {
-  tradeType: TradeType
+  tradeType: 'INTRADAY' | 'POSITIONAL'
   entryDate: Date
   entryPrice: number
   quantity: number
@@ -189,6 +236,7 @@ export interface TradeFormData {
   confidenceLevel?: number
   emotionalState?: string
   marketCondition?: string
+  planning?: string // Pre-trade planning notes
   brokerName?: string
   customBrokerage: boolean
   brokerageType?: string
@@ -203,6 +251,16 @@ export interface TradeFormData {
   expiryDate?: Date
   lotSize?: number
   underlying?: string
+  
+  // Hedge Position
+  hasHedgePosition?: boolean
+  hedgePosition?: PositionType
+  hedgeEntryDate?: Date
+  hedgeEntryPrice?: number
+  hedgeQuantity?: number
+  hedgeExitDate?: Date
+  hedgeExitPrice?: number
+  hedgeNotes?: string
 }
 
 // Filter Types
@@ -337,4 +395,55 @@ export interface ChargeRates {
   exchange: number
   sebi: number
   stampDuty: number
+}
+
+// Capital Management Types
+export interface CapitalPool {
+  id: string
+  name: string
+  poolType: PoolType
+  initialAmount: number
+  currentAmount: number
+  totalInvested: number
+  totalWithdrawn: number
+  totalPnl: number
+  isActive: boolean
+  description?: string | null
+  createdAt: Date | string
+  updatedAt: Date | string
+  transactions?: CapitalTransaction[]
+}
+
+export interface CapitalTransaction {
+  id: string
+  poolId: string
+  transactionType: TransactionType
+  amount: number
+  description?: string | null
+  referenceId?: string | null
+  referenceType?: string | null
+  balanceAfter: number
+  createdAt: Date | string
+  pool?: CapitalPool
+}
+
+export interface CapitalAllocation {
+  totalCapital: number
+  equityCapital: number
+  fnoCapital: number
+  availableEquity: number
+  availableFno: number
+  totalPnl: number
+  equityPnl: number
+  fnoPnl: number
+  totalReturn: number
+  equityReturn: number
+  fnoReturn: number
+}
+
+export interface CapitalSetupData {
+  totalAmount: number
+  equityAmount: number
+  fnoAmount: number
+  description?: string
 }

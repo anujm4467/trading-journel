@@ -1,35 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { tradesApi, ApiResponse } from '@/lib/api'
-
-export interface Trade {
-  id: string
-  symbol: string
-  instrumentType: 'EQUITY' | 'FUTURES' | 'OPTIONS'
-  side: 'BUY' | 'SELL'
-  quantity: number
-  entryPrice: number
-  exitPrice?: number
-  entryDate: string
-  exitDate?: string
-  strategy?: string
-  emotionalState?: string
-  notes?: string
-  stopLoss?: number
-  target?: number
-  confidence?: number
-  charges?: {
-    brokerage: number
-    stt: number
-    exchange: number
-    sebi: number
-    stampDuty: number
-    gst: number
-    total: number
-  }
-  tags?: Array<{ id: string; name: string }>
-  createdAt: string
-  updatedAt: string
-}
+import { Trade } from '@/types/trade'
 
 export interface TradesFilters {
   page?: number
@@ -55,8 +26,9 @@ export interface UseTradesReturn {
     pages: number
   } | null
   refetch: () => Promise<void>
-  createTrade: (tradeData: Partial<Trade>) => Promise<ApiResponse<Trade>>
-  updateTrade: (id: string, tradeData: Partial<Trade>) => Promise<ApiResponse<Trade>>
+  getTradeById: (id: string) => Promise<Trade>
+  createTrade: (tradeData: Partial<Trade>) => Promise<ApiResponse<Record<string, unknown>>>
+  updateTrade: (id: string, tradeData: Partial<Trade>) => Promise<ApiResponse<Record<string, unknown>>>
   deleteTrade: (id: string) => Promise<ApiResponse<{ message: string }>>
   deleteTrades: (ids: string[]) => Promise<ApiResponse<{ message: string }>>
   setFilters: (filters: TradesFilters) => void
@@ -87,8 +59,9 @@ export function useTrades(initialFilters: TradesFilters = {}): UseTradesReturn {
       }
       
       if (response.data) {
-        setTrades(response.data.trades || [])
-        setPagination(response.data.pagination || null)
+        const data = response.data as { trades?: Trade[]; pagination?: { page: number; limit: number; total: number; pages: number } }
+        setTrades(data.trades || [])
+        setPagination(data.pagination || null)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch trades')
@@ -121,7 +94,7 @@ export function useTrades(initialFilters: TradesFilters = {}): UseTradesReturn {
       if (response.data) {
         // Update the trade in the local state
         setTrades(prev => prev.map(trade => 
-          trade.id === id ? { ...trade, ...response.data } : trade
+          trade.id === id ? { ...trade, ...(response.data as Partial<Trade>) } : trade
         ))
       }
       
@@ -183,6 +156,24 @@ export function useTrades(initialFilters: TradesFilters = {}): UseTradesReturn {
     }
   }, [pagination])
 
+  const getTradeById = useCallback(async (id: string): Promise<Trade> => {
+    try {
+      const response = await tradesApi.getTradeById(id)
+      
+      if (response.error) {
+        throw new Error(response.error)
+      }
+      
+      if (response.data) {
+        return response.data as Trade
+      }
+      
+      throw new Error('Trade not found')
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : 'Failed to fetch trade')
+    }
+  }, [])
+
   const handleSetFilters = useCallback((newFilters: TradesFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }))
   }, [])
@@ -197,6 +188,7 @@ export function useTrades(initialFilters: TradesFilters = {}): UseTradesReturn {
     error,
     pagination,
     refetch: fetchTrades,
+    getTradeById,
     createTrade,
     updateTrade,
     deleteTrade,

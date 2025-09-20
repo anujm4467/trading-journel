@@ -17,8 +17,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
   const handleAddTrade = () => {
-    // TODO: Open add trade modal
-    console.log('Add trade clicked')
+    // Navigation will be handled by the Link component
   }
 
   const handleExport = (format: string) => {
@@ -60,6 +59,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     // TODO: Clear all filters
     console.log('Filters cleared')
   }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-900/20 dark:to-indigo-900/20">
@@ -104,6 +104,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         onApplyFilters={handleApplyFilters}
         onClearFilters={handleClearFilters}
       />
+
     </div>
   )
 }

@@ -33,8 +33,11 @@ import {
 } from 'lucide-react'
 import { formatCurrency, formatPercentage } from '@/utils/calculations'
 import { useTrades } from '@/hooks/useTrades'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export function TradesTable() {
+  const router = useRouter()
   const {
     trades,
     loading,
@@ -45,6 +48,7 @@ export function TradesTable() {
     deleteTrades,
     setFilters
   } = useTrades()
+  
   
   const [selectedTrades, setSelectedTrades] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -111,22 +115,32 @@ export function TradesTable() {
     }
   }
 
+  const handleTradeClick = (tradeId: string) => {
+    router.push(`/trades/${tradeId}`)
+  }
+
   // Calculate summary metrics
   const totalTrades = trades.length
   const closedTrades = trades.filter(trade => trade.exitPrice).length
   
   const totalNetPnl = trades.reduce((sum, trade) => {
     if (trade.exitPrice && trade.charges) {
-      const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.side === 'BUY' ? 1 : -1)
-      return sum + grossPnl - trade.charges.total
+      const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
+      const chargesTotal = Array.isArray(trade.charges) 
+        ? trade.charges.reduce((acc, charge) => acc + charge.amount, 0)
+        : trade.charges.total
+      return sum + grossPnl - chargesTotal
     }
     return sum
   }, 0)
 
   const winningTrades = trades.filter(trade => {
     if (!trade.exitPrice || !trade.charges) return false
-    const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.side === 'BUY' ? 1 : -1)
-    return grossPnl - trade.charges.total > 0
+    const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
+    const chargesTotal = Array.isArray(trade.charges) 
+      ? trade.charges.reduce((acc, charge) => acc + charge.amount, 0)
+      : trade.charges.total
+    return grossPnl - chargesTotal > 0
   }).length
 
   const winRate = closedTrades > 0 ? (winningTrades / closedTrades) * 100 : 0
@@ -164,10 +178,12 @@ export function TradesTable() {
             Track and analyze your trading performance
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Trade
-        </Button>
+        <Link href="/trades/new">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Trade
+          </Button>
+        </Link>
       </div>
 
       {/* Summary Cards */}
@@ -353,9 +369,13 @@ export function TradesTable() {
             {trades.map((trade) => {
               const isOpen = !trade.exitPrice
               const grossPnl = trade.exitPrice ? 
-                (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.side === 'BUY' ? 1 : -1) : 
+                (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1) : 
                 null
-              const netPnl = grossPnl && trade.charges ? grossPnl - trade.charges.total : null
+              const chargesTotal = trade.charges ? 
+                (Array.isArray(trade.charges) 
+                  ? trade.charges.reduce((acc, charge) => acc + charge.amount, 0)
+                  : trade.charges.total) : 0
+              const netPnl = grossPnl ? grossPnl - chargesTotal : null
               const percentageReturn = netPnl && trade.entryPrice ? 
                 (netPnl / (trade.entryPrice * trade.quantity)) * 100 : null
               
@@ -364,9 +384,10 @@ export function TradesTable() {
                   key={trade.id}
                   className={`${selectedTrades.includes(trade.id) ? 'bg-muted/50' : ''} ${
                     isOpen ? 'border-l-4 border-l-warning' : ''
-                  }`}
+                  } cursor-pointer hover:bg-muted/30 transition-colors`}
+                  onClick={() => handleTradeClick(trade.id)}
                 >
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={selectedTrades.includes(trade.id)}
                       onCheckedChange={(checked) => handleSelectTrade(trade.id, checked as boolean)}
@@ -383,9 +404,9 @@ export function TradesTable() {
                     <div className="flex items-center space-x-2">
                       <span className="font-bold">{trade.symbol}</span>
                       <span className="text-xs">
-                        {trade.instrumentType === 'EQUITY' && '🏢'}
-                        {trade.instrumentType === 'FUTURES' && '📊'}
-                        {trade.instrumentType === 'OPTIONS' && '📈'}
+                        {trade.instrument === 'EQUITY' && '🏢'}
+                        {trade.instrument === 'FUTURES' && '📊'}
+                        {trade.instrument === 'OPTIONS' && '📈'}
                       </span>
                     </div>
                   </TableCell>
@@ -393,22 +414,22 @@ export function TradesTable() {
                     <Badge 
                       variant="outline"
                       className={
-                        trade.instrumentType === 'EQUITY' ? 'bg-equity/10 text-equity' :
-                        trade.instrumentType === 'FUTURES' ? 'bg-futures/10 text-futures' :
+                        trade.instrument === 'EQUITY' ? 'bg-equity/10 text-equity' :
+                        trade.instrument === 'FUTURES' ? 'bg-futures/10 text-futures' :
                         'bg-options/10 text-options'
                       }
                     >
-                      {trade.instrumentType === 'EQUITY' ? 'EQ' :
-                       trade.instrumentType === 'FUTURES' ? 'FUT' : 'OPT'}
+                      {trade.instrument === 'EQUITY' ? 'EQ' :
+                       trade.instrument === 'FUTURES' ? 'FUT' : 'OPT'}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <span className={
-                      trade.side === 'BUY' 
+                      trade.position === 'BUY' 
                         ? 'text-profit font-medium' 
                         : 'text-loss font-medium'
                     }>
-                      {trade.side}
+                      {trade.position}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">{trade.quantity}</TableCell>
@@ -430,7 +451,7 @@ export function TradesTable() {
                     ) : '--'}
                   </TableCell>
                   <TableCell className="text-right">
-                    {trade.charges ? formatCurrency(trade.charges.total) : '--'}
+                    {trade.charges ? formatCurrency(chargesTotal) : '--'}
                   </TableCell>
                   <TableCell className="text-right">
                     {netPnl !== null ? (
@@ -455,7 +476,7 @@ export function TradesTable() {
                       '--'
                     }
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0" disabled={isDeleting === trade.id}>
@@ -467,9 +488,9 @@ export function TradesTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleTradeClick(trade.id)}>
                           <Eye className="h-4 w-4 mr-2" />
-                          View
+                          View Details
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Edit className="h-4 w-4 mr-2" />

@@ -26,7 +26,7 @@ model Profile {
 // Core Trading Data
 model Trade {
   id              String      @id @default(cuid())
-  tradeType       TradeType   @default(ROUND_TRIP)
+  tradeType       TradeType   @default(INTRADAY)
   
   // Entry Information
   entryDate       DateTime
@@ -56,11 +56,12 @@ model Trade {
   riskAmount      Float?
   rewardAmount    Float?
   riskRewardRatio Float?
+  confidenceLevel Int? // 1-10 scale
   
   // Strategy & Psychology
-  confidenceLevel Int? // 1-10 scale
   emotionalState  String?
   marketCondition String?
+  planning        String? // Pre-trade planning notes
   
   // Brokerage
   brokerName      String?
@@ -81,6 +82,7 @@ model Trade {
   marketTags      TradeMarketTag[]
   attachments     TradeAttachment[]
   optionsTrade    OptionsTrade?
+  hedgePosition   HedgePosition?
   
   @@map("trades")
 }
@@ -98,6 +100,48 @@ model OptionsTrade {
   trade Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
   
   @@map("options_trades")
+}
+
+// Hedge Position for Options Trading
+model HedgePosition {
+  id              String      @id @default(cuid())
+  tradeId         String      @unique
+  position        PositionType
+  entryDate       DateTime
+  entryPrice      Float
+  quantity        Int
+  exitDate        DateTime?
+  exitPrice       Float?
+  entryValue      Float
+  exitValue       Float?
+  grossPnl        Float?
+  netPnl          Float?
+  totalCharges    Float?
+  percentageReturn Float?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  trade Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  charges HedgeCharge[]
+  
+  @@map("hedge_positions")
+}
+
+// Hedge Position Charges
+model HedgeCharge {
+  id          String    @id @default(cuid())
+  hedgeId     String
+  chargeType  ChargeType
+  rate        Float
+  baseAmount  Float
+  amount      Float
+  description String?
+  createdAt   DateTime  @default(now())
+  
+  hedgePosition HedgePosition @relation(fields: [hedgeId], references: [id], onDelete: Cascade)
+  
+  @@map("hedge_charges")
 }
 
 // Charges breakdown
@@ -230,6 +274,43 @@ model Position {
   @@map("positions")
 }
 
+// Capital Management
+model CapitalPool {
+  id              String   @id @default(cuid())
+  name            String   // "Total Capital", "Equity Capital", "F&O Capital"
+  poolType        PoolType @default(TOTAL)
+  initialAmount   Float
+  currentAmount   Float
+  totalInvested   Float    @default(0)
+  totalWithdrawn  Float    @default(0)
+  totalPnl        Float    @default(0)
+  isActive        Boolean  @default(true)
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  transactions    CapitalTransaction[]
+  
+  @@map("capital_pools")
+}
+
+model CapitalTransaction {
+  id              String            @id @default(cuid())
+  poolId          String
+  transactionType TransactionType
+  amount          Float
+  description     String?
+  referenceId     String? // Reference to trade ID or other entity
+  referenceType   String? // "TRADE", "DEPOSIT", "WITHDRAWAL", "TRANSFER"
+  balanceAfter    Float
+  createdAt       DateTime          @default(now())
+  
+  pool            CapitalPool @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  
+  @@map("capital_transactions")
+}
+
 // App Settings (Single User)
 model AppSettings {
   id                    String   @id @default(cuid())
@@ -302,16 +383,13 @@ model AuditLog {
 
 // Enums
 enum TradeType {
-  ENTRY_ONLY
-  ROUND_TRIP
-  MULTI_LEG
+  INTRADAY
+  POSITIONAL
 }
 
 enum PositionType {
   BUY
   SELL
-  LONG
-  SHORT
 }
 
 enum InstrumentType {
@@ -332,4 +410,19 @@ enum ChargeType {
   SEBI
   STAMP_DUTY
   CUSTOM
+}
+
+enum PoolType {
+  TOTAL
+  EQUITY
+  FNO
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  PROFIT
+  LOSS
+  TRANSFER_IN
+  TRANSFER_OUT
 }

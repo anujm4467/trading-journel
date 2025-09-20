@@ -105,6 +105,114 @@ export function calculatePnL(
 }
 
 /**
+ * Calculate P&L for hedge position
+ */
+export function calculateHedgePnL(
+  entryValue: number,
+  exitValue: number,
+  charges: ChargeCalculation,
+  position: PositionType
+): {
+  grossPnl: number
+  netPnl: number
+  percentageReturn: number
+} {
+  // Hedge position P&L calculation (opposite to main position)
+  let grossPnl: number
+  if (position === 'BUY' || position === 'LONG') {
+    grossPnl = exitValue - entryValue
+  } else {
+    grossPnl = entryValue - exitValue
+  }
+
+  const netPnl = grossPnl - charges.total
+  const percentageReturn = (netPnl / entryValue) * 100
+
+  return {
+    grossPnl: Math.round(grossPnl * 100) / 100,
+    netPnl: Math.round(netPnl * 100) / 100,
+    percentageReturn: Math.round(percentageReturn * 100) / 100
+  }
+}
+
+/**
+ * Calculate combined P&L for main trade and hedge position
+ */
+export function calculateCombinedPnL(
+  mainTrade: {
+    entryValue: number
+    exitValue: number
+    charges: ChargeCalculation
+    position: PositionType
+  },
+  hedgeTrade?: {
+    entryValue: number
+    exitValue: number
+    charges: ChargeCalculation
+    position: PositionType
+  }
+): {
+  mainTrade: {
+    grossPnl: number
+    netPnl: number
+    percentageReturn: number
+  }
+  hedgeTrade?: {
+    grossPnl: number
+    netPnl: number
+    percentageReturn: number
+  }
+  combined: {
+    grossPnl: number
+    netPnl: number
+    totalCharges: number
+    percentageReturn: number
+  }
+} {
+  const mainPnL = calculatePnL(
+    mainTrade.entryValue,
+    mainTrade.exitValue,
+    mainTrade.charges,
+    mainTrade.position
+  )
+
+  let hedgePnL: any = undefined
+  let combined = {
+    grossPnl: mainPnL.grossPnl,
+    netPnl: mainPnL.netPnl,
+    totalCharges: mainTrade.charges.total,
+    percentageReturn: mainPnL.percentageReturn
+  }
+
+  if (hedgeTrade) {
+    hedgePnL = calculateHedgePnL(
+      hedgeTrade.entryValue,
+      hedgeTrade.exitValue,
+      hedgeTrade.charges,
+      hedgeTrade.position
+    )
+
+    combined = {
+      grossPnl: mainPnL.grossPnl + hedgePnL.grossPnl,
+      netPnl: mainPnL.netPnl + hedgePnL.netPnl,
+      totalCharges: mainTrade.charges.total + hedgeTrade.charges.total,
+      percentageReturn: ((mainPnL.netPnl + hedgePnL.netPnl) / mainTrade.entryValue) * 100
+    }
+  }
+
+  return {
+    mainTrade: mainPnL,
+    hedgeTrade: hedgePnL,
+    combined: {
+      grossPnl: Math.round(combined.grossPnl * 100) / 100,
+      netPnl: Math.round(combined.netPnl * 100) / 100,
+      totalCharges: Math.round(combined.totalCharges * 100) / 100,
+      percentageReturn: Math.round(combined.percentageReturn * 100) / 100
+    }
+  }
+}
+
+/**
  * Calculate risk/reward ratio
  */
 export function calculateRiskReward(

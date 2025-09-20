@@ -64,7 +64,7 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
       }
       
       if (response.data) {
-        setData(response.data)
+        setData(response.data as unknown as AnalyticsData)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch analytics')

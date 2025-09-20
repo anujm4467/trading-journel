@@ -1,0 +1,152 @@
+{
+  "strategyTags": [
+    {
+      "id": "support-resistance",
+      "name": "Support & Resistance",
+      "color": "bg-blue-100 text-blue-800 border-blue-200",
+      "hoverColor": "hover:bg-blue-200"
+    },
+    {
+      "id": "breakout",
+      "name": "Breakout",
+      "color": "bg-green-100 text-green-800 border-green-200",
+      "hoverColor": "hover:bg-green-200"
+    },
+    {
+      "id": "rsi-divergence",
+      "name": "RSI Divergence",
+      "color": "bg-purple-100 text-purple-800 border-purple-200",
+      "hoverColor": "hover:bg-purple-200"
+    },
+    {
+      "id": "intraday-hunter",
+      "name": "Intraday Hunter",
+      "color": "bg-orange-100 text-orange-800 border-orange-200",
+      "hoverColor": "hover:bg-orange-200"
+    },
+    {
+      "id": "scalping",
+      "name": "Scalping",
+      "color": "bg-red-100 text-red-800 border-red-200",
+      "hoverColor": "hover:bg-red-200"
+    }
+  ],
+  "emotionalStates": [
+    {
+      "id": "confident",
+      "name": "Confident",
+      "color": "bg-green-100 text-green-800 border-green-200",
+      "icon": "😊"
+    },
+    {
+      "id": "nervous",
+      "name": "Nervous",
+      "color": "bg-yellow-100 text-yellow-800 border-yellow-200",
+      "icon": "😰"
+    },
+    {
+      "id": "excited",
+      "name": "Excited",
+      "color": "bg-pink-100 text-pink-800 border-pink-200",
+      "icon": "🤩"
+    },
+    {
+      "id": "calm",
+      "name": "Calm",
+      "color": "bg-blue-100 text-blue-800 border-blue-200",
+      "icon": "😌"
+    },
+    {
+      "id": "anxious",
+      "name": "Anxious",
+      "color": "bg-orange-100 text-orange-800 border-orange-200",
+      "icon": "😟"
+    },
+    {
+      "id": "focused",
+      "name": "Focused",
+      "color": "bg-indigo-100 text-indigo-800 border-indigo-200",
+      "icon": "🎯"
+    },
+    {
+      "id": "greedy",
+      "name": "Greedy",
+      "color": "bg-red-100 text-red-800 border-red-200",
+      "icon": "🤑"
+    },
+    {
+      "id": "fearful",
+      "name": "Fearful",
+      "color": "bg-gray-100 text-gray-800 border-gray-200",
+      "icon": "😨"
+    },
+    {
+      "id": "optimistic",
+      "name": "Optimistic",
+      "color": "bg-emerald-100 text-emerald-800 border-emerald-200",
+      "icon": "😄"
+    },
+    {
+      "id": "pessimistic",
+      "name": "Pessimistic",
+      "color": "bg-slate-100 text-slate-800 border-slate-200",
+      "icon": "😔"
+    },
+    {
+      "id": "patient",
+      "name": "Patient",
+      "color": "bg-cyan-100 text-cyan-800 border-cyan-200",
+      "icon": "🧘"
+    },
+    {
+      "id": "impatient",
+      "name": "Impatient",
+      "color": "bg-amber-100 text-amber-800 border-amber-200",
+      "icon": "😤"
+    },
+    {
+      "id": "disciplined",
+      "name": "Disciplined",
+      "color": "bg-violet-100 text-violet-800 border-violet-200",
+      "icon": "💪"
+    },
+    {
+      "id": "reckless",
+      "name": "Reckless",
+      "color": "bg-rose-100 text-rose-800 border-rose-200",
+      "icon": "😈"
+    },
+    {
+      "id": "cautious",
+      "name": "Cautious",
+      "color": "bg-teal-100 text-teal-800 border-teal-200",
+      "icon": "🤔"
+    },
+    {
+      "id": "aggressive",
+      "name": "Aggressive",
+      "color": "bg-red-100 text-red-800 border-red-200",
+      "icon": "⚡"
+    }
+  ],
+  "marketConditions": [
+    {
+      "id": "bullish",
+      "name": "Bullish",
+      "color": "bg-green-100 text-green-800 border-green-200",
+      "icon": "📈"
+    },
+    {
+      "id": "bearish",
+      "name": "Bearish",
+      "color": "bg-red-100 text-red-800 border-red-200",
+      "icon": "📉"
+    },
+    {
+      "id": "sideways",
+      "name": "Sideways",
+      "color": "bg-yellow-100 text-yellow-800 border-yellow-200",
+      "icon": "↔️"
+    }
+  ]
+}

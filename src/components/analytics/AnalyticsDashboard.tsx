@@ -9,89 +9,19 @@ import {
   Activity,
   Target,
   Download,
-  Loader2,
   ArrowUpRight,
   ArrowDownRight,
   DollarSign,
   PieChart,
-  Calendar,
   Clock,
-  Shield,
-  TrendingDown
+  Shield
 } from 'lucide-react'
 import { PerformanceChart } from './PerformanceChart'
 import { WinLossChart } from './WinLossChart'
 import { StrategyPerformance } from './StrategyPerformance'
 import { TimeAnalysis } from './TimeAnalysis'
 import { RiskMetrics } from './RiskMetrics'
-import { useAnalytics } from '@/hooks/useAnalytics'
-import { formatCurrency, formatPercentage } from '@/utils/calculations'
 import { mockTradingData } from '@/lib/mockData'
-
-// Use shared mock data instead of local duplicate
-const mockAnalyticsData = {
-  overview: {
-    totalTrades: 1247,
-    winningTrades: 854,
-    losingTrades: 393,
-    winRate: 68.5,
-    totalGrossPnl: 189500,
-    totalCharges: 63830,
-    totalNetPnl: 125670,
-    averageWin: 2218,
-    averageLoss: -1625,
-    profitFactor: 2.34
-  },
-  strategyPerformance: [
-    { strategy: 'Breakout', trades: 67, winRate: 72, pnl: 89200, avgPnl: 1331 },
-    { strategy: 'Momentum', trades: 56, winRate: 75, pnl: 76800, avgPnl: 1371 },
-    { strategy: 'Swing', trades: 45, winRate: 64, pnl: 34600, avgPnl: 769 },
-    { strategy: 'Scalping', trades: 89, winRate: 68, pnl: 45200, avgPnl: 508 },
-    { strategy: 'Mean Reversion', trades: 34, winRate: 59, pnl: -8900, avgPnl: -262 }
-  ],
-  instrumentPerformance: [
-    { instrument: 'Equity', trades: 125, pnl: 89400, winRate: 69 },
-    { instrument: 'Futures', trades: 67, pnl: 67800, winRate: 65 },
-    { instrument: 'Options', trades: 89, pnl: 58470, winRate: 71 }
-  ],
-  dailyPnlData: [
-    { date: '2024-01-01', pnl: 12000 },
-    { date: '2024-01-02', pnl: 18500 },
-    { date: '2024-01-03', pnl: 22100 },
-    { date: '2024-01-04', pnl: 18900 },
-    { date: '2024-01-05', pnl: 25600 },
-    { date: '2024-01-06', pnl: 31200 },
-    { date: '2024-01-07', pnl: 28900 },
-    { date: '2024-01-08', pnl: 35100 },
-    { date: '2024-01-09', pnl: 42800 },
-    { date: '2024-01-10', pnl: 38900 },
-    { date: '2024-01-11', pnl: 45600 },
-    { date: '2024-01-12', pnl: 125670 }
-  ],
-  timeAnalysis: {
-    dayOfWeek: {
-      'Monday': 5200,
-      'Tuesday': 6800,
-      'Wednesday': -2100,
-      'Thursday': 8900,
-      'Friday': 4200
-    },
-    timeOfDay: {
-      'Pre-Market': 1200,
-      'Opening': 4500,
-      'Morning': 8900,
-      'Afternoon': 3200,
-      'Closing': 1800
-    }
-  },
-  riskMetrics: {
-    maxDrawdown: -18750,
-    sharpeRatio: 1.67,
-    avgRiskReward: 2.1,
-    consecutiveLosses: 5,
-    recoveryFactor: 2.8
-  }
-}
 
 export function AnalyticsDashboard() {
   // Comment out real API call and use mock data for better visualization
@@ -347,9 +277,9 @@ export function AnalyticsDashboard() {
 
         <TabsContent value="risk" className="space-y-6">
           <RiskMetrics 
-            maxDrawdown={data.riskMetrics.maxDrawdown}
-            sharpeRatio={data.riskMetrics.sharpeRatio}
-            avgRiskReward={data.riskMetrics.avgRiskReward}
+            maxDrawdown={data.riskData.maxDrawdown}
+            sharpeRatio={data.riskData.sharpeRatio}
+            avgRiskReward={data.riskData.avgRiskReward}
             totalCharges={data.overview.totalCharges}
           />
         </TabsContent>
@@ -377,7 +307,7 @@ export function AnalyticsDashboard() {
                     <span className="text-2xl font-bold text-blue-600">+12.3%</span>
                   </div>
                   <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                    You're outperforming the market by <span className="font-bold text-green-600">+56.2%</span>
+                    You&apos;re outperforming the market by <span className="font-bold text-green-600">+56.2%</span>
                   </div>
                 </div>
               </CardContent>

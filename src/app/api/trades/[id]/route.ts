@@ -12,6 +12,12 @@ export async function GET(
       where: { id },
       include: {
         charges: true,
+        optionsTrade: true,
+        hedgePosition: {
+          include: {
+            charges: true
+          }
+        },
         strategyTags: {
           include: {
             strategyTag: true

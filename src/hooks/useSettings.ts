@@ -8,6 +8,7 @@ export interface Settings {
   EXPORT?: Record<string, unknown>
   BACKUP?: Record<string, unknown>
   ADVANCED?: Record<string, unknown>
+  [key: string]: Record<string, unknown> | undefined
 }
 
 export interface UseSettingsReturn {
@@ -37,7 +38,7 @@ export function useSettings(): UseSettingsReturn {
       }
       
       if (response.data) {
-        setSettings(response.data)
+        setSettings(response.data as unknown as Settings)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch settings')
@@ -71,7 +72,12 @@ export function useSettings(): UseSettingsReturn {
 
   const updateAllSettings = useCallback(async (newSettings: Settings) => {
     try {
-      const response = await settingsApi.updateAllSettings(newSettings)
+      // Filter out undefined values for the API call
+      const filteredSettings = Object.fromEntries(
+        Object.entries(newSettings).filter(([, value]) => value !== undefined)
+      ) as Record<string, Record<string, unknown>>
+      
+      const response = await settingsApi.updateAllSettings(filteredSettings)
       
       if (!response.error) {
         setSettings(newSettings)

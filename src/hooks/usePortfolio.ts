@@ -84,7 +84,7 @@ export function usePortfolio(): UsePortfolioReturn {
       }
       
       if (response.data) {
-        setData(response.data)
+        setData(response.data as unknown as PortfolioData)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch portfolio')

@@ -2,6 +2,7 @@
 
 export interface ApiResponse<T> {
   data?: T
+  success?: boolean
   error?: string
   message?: string
 }
@@ -79,6 +80,11 @@ export const tradesApi = {
 
   // Get a specific trade
   async getTrade(id: string) {
+    return apiCall<Record<string, unknown>>(`/api/trades/${id}`)
+  },
+
+  // Get a specific trade by ID (alias for getTrade)
+  async getTradeById(id: string) {
     return apiCall<Record<string, unknown>>(`/api/trades/${id}`)
   },
 
@@ -240,8 +246,8 @@ export const apiUtils = {
   // Handle API errors
   handleError(error: unknown): string {
     if (typeof error === 'string') return error
-    if (error?.message) return error.message
-    if (error?.error) return error.error
+    if (error && typeof error === 'object' && 'message' in error) return (error as { message: string }).message
+    if (error && typeof error === 'object' && 'error' in error) return (error as { error: string }).error
     return 'An unexpected error occurred'
   },
 
