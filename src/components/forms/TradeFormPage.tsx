@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { TradeFormData, CapitalPool } from '@/types/trade'
+import { TradeDetails } from '@/types/tradeDetails'
 import { calculateCharges } from '@/utils/calculations'
 import { useCapital } from '@/hooks/useCapital'
 import tradeData from '@/data/tradeData.json'
@@ -44,18 +45,18 @@ const tradeFormSchema = z.object({
   position: z.enum(['BUY', 'SELL']),
   symbol: z.string().min(1, 'Symbol is required'),
   instrument: z.enum(['EQUITY', 'FUTURES', 'OPTIONS']),
-  capitalPoolId: z.string().min(1, 'Capital pool is required'),
+  capitalPoolId: z.string().optional(),
   exitDate: z.date().optional(),
-  exitPrice: z.number().positive().optional(),
-  stopLoss: z.number().positive().optional(),
-  target: z.number().positive().optional(),
+  exitPrice: z.number().min(0).optional(),
+  stopLoss: z.number().min(0).optional(),
+  target: z.number().min(0).optional(),
   confidenceLevel: z.number().min(1).max(10).optional(),
   emotionalState: z.string().optional(),
   marketCondition: z.string().optional(),
   brokerName: z.string().optional(),
   customBrokerage: z.boolean(),
   brokerageType: z.string().optional(),
-  brokerageValue: z.number().positive().optional(),
+  brokerageValue: z.number().min(0).optional(),
   notes: z.string().optional(),
   planning: z.string().optional(),
   strategyTagIds: z.array(z.string()),
@@ -63,19 +64,20 @@ const tradeFormSchema = z.object({
   marketTagIds: z.array(z.string()),
   // Options specific
   optionType: z.enum(['CALL', 'PUT']).optional(),
-  strikePrice: z.number().positive().optional(),
+  strikePrice: z.number().min(0).optional(),
   expiryDate: z.date().optional(),
-  lotSize: z.number().positive().optional(),
+  lotSize: z.number().min(0).optional(),
   underlying: z.string().optional(),
   
   // Hedge Position
   hasHedgePosition: z.boolean().optional(),
   hedgeOptionType: z.enum(['CALL', 'PUT']).optional(),
   hedgeEntryDate: z.date().optional(),
-  hedgeEntryPrice: z.number().positive().optional(),
-  hedgeQuantity: z.number().positive().optional(),
+  hedgeEntryPrice: z.number().min(0).optional(),
+  hedgeQuantity: z.number().min(0).optional(),
   hedgeExitDate: z.date().optional(),
-  hedgeExitPrice: z.number().positive().optional(),
+  hedgeExitPrice: z.number().min(0).optional(),
+  hedgeNotes: z.string().optional(),
 })
 
 type TradeFormSchema = z.infer<typeof tradeFormSchema>
@@ -85,6 +87,8 @@ interface TradeFormPageProps {
   onSaveDraft: (data: TradeFormData) => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
+  initialData?: TradeDetails
+  isEdit?: boolean
 }
 
 const steps = [
@@ -114,7 +118,7 @@ const steps = [
   },
 ]
 
-export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = false }: TradeFormPageProps) {
+export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = false, initialData, isEdit = false }: TradeFormPageProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [calculations, setCalculations] = useState({
     entryValue: 0,
@@ -137,28 +141,123 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
 
   const { pools } = useCapital()
 
+  // Default values for new trades
+  const defaultValues: Partial<TradeFormSchema> = {
+    tradeType: 'INTRADAY',
+    entryDate: new Date(),
+    position: 'SELL',
+    instrument: 'OPTIONS',
+    capitalPoolId: '', // Will be auto-selected based on instrument
+    customBrokerage: false,
+    brokerageValue: undefined, // Will be set based on customBrokerage
+    strategyTagIds: [],
+    emotionalTagIds: [],
+    marketTagIds: [],
+    stopLoss: 4000,
+    target: 4000,
+    confidenceLevel: 7,
+    marketCondition: 'Bullish',
+    emotionalState: 'Confident',
+    planning: '',
+    lotSize: 75,
+  }
+
   const form = useForm<TradeFormSchema>({
     resolver: zodResolver(tradeFormSchema),
-    defaultValues: {
-      tradeType: 'INTRADAY',
-      entryDate: new Date(),
-      position: 'SELL',
-      instrument: 'OPTIONS',
-      customBrokerage: false,
-      strategyTagIds: [],
-      emotionalTagIds: [],
-      marketTagIds: [],
-      stopLoss: 4000,
-      target: 4000,
-      confidenceLevel: 7,
-      marketCondition: 'Bullish',
-      emotionalState: 'Confident',
-      planning: '',
-      lotSize: 75,
-    },
+    defaultValues: defaultValues as Partial<TradeFormSchema>,
   })
 
-  const hasSetInitialValues = useRef(false)
+  // Auto-select capital pool based on instrument type
+  const getPoolForInstrument = useCallback((instrument: string) => {
+    if (!pools || pools.length === 0) return ''
+    
+    switch (instrument) {
+      case 'EQUITY':
+        const equityPool = pools.find(pool => pool.poolType === 'EQUITY')
+        return equityPool?.id || pools[0]?.id || ''
+      case 'OPTIONS':
+      case 'FUTURES':
+        const fnoPool = pools.find(pool => pool.poolType === 'FNO')
+        return fnoPool?.id || pools[0]?.id || ''
+      default:
+        const totalPool = pools.find(pool => pool.poolType === 'TOTAL')
+        return totalPool?.id || pools[0]?.id || ''
+    }
+  }, [pools])
+
+  // Watch instrument changes and auto-select pool
+  const currentInstrument = form.watch('instrument')
+  useEffect(() => {
+    if (currentInstrument && pools.length > 0) {
+      const selectedPoolId = getPoolForInstrument(currentInstrument)
+      if (selectedPoolId) {
+        form.setValue('capitalPoolId', selectedPoolId)
+        console.log(`Auto-selected pool for ${currentInstrument}:`, selectedPoolId)
+      }
+    }
+  }, [currentInstrument, pools, form, getPoolForInstrument])
+
+  // Set initial pool when pools are loaded and form is initialized
+  useEffect(() => {
+    if (pools.length > 0 && !isEdit) {
+      const currentInstrumentValue = form.getValues('instrument')
+      const selectedPoolId = getPoolForInstrument(currentInstrumentValue)
+      if (selectedPoolId) {
+        form.setValue('capitalPoolId', selectedPoolId)
+        console.log(`Initial pool selected for ${currentInstrumentValue}:`, selectedPoolId)
+      }
+    }
+  }, [pools, isEdit, form, getPoolForInstrument])
+
+  // Debug logging for edit mode and populate form with initial data
+  useEffect(() => {
+    if (initialData && isEdit) {
+      console.log('Edit mode - Initial data:', initialData)
+      
+      // Populate form with initial data
+      const formData = {
+        tradeType: initialData.tradeType as 'INTRADAY' | 'POSITIONAL',
+        entryDate: new Date(initialData.entryDate),
+        entryPrice: initialData.entryPrice,
+        quantity: initialData.quantity,
+        position: initialData.position as 'BUY' | 'SELL',
+        symbol: initialData.symbol,
+        instrument: initialData.instrument as 'EQUITY' | 'FUTURES' | 'OPTIONS',
+        capitalPoolId: getPoolForInstrument(initialData.instrument), // Auto-select based on instrument
+        exitDate: initialData.exitDate ? new Date(initialData.exitDate) : undefined,
+        exitPrice: initialData.exitPrice || undefined,
+        stopLoss: initialData.stopLoss || undefined,
+        target: initialData.target || undefined,
+        confidenceLevel: initialData.confidenceLevel || 7,
+        marketCondition: initialData.marketCondition || 'Bullish',
+        emotionalState: initialData.emotionalState || 'Confident',
+        planning: initialData.planning || '',
+        notes: initialData.notes || '',
+        customBrokerage: initialData.customBrokerage || false,
+        brokerageType: initialData.brokerageType || 'PERCENTAGE',
+        brokerageValue: initialData.brokerageValue || (initialData.customBrokerage ? 0 : undefined),
+        brokerName: initialData.brokerName || '',
+        lotSize: initialData.optionsTrade?.lotSize || 75,
+        optionType: initialData.optionsTrade?.optionType || 'CALL',
+        strikePrice: initialData.optionsTrade?.strikePrice || 0,
+        expiryDate: initialData.optionsTrade?.expiryDate ? new Date(initialData.optionsTrade.expiryDate) : undefined,
+        strategyTagIds: initialData.strategyTags?.map(tag => tag.id) || [],
+        emotionalTagIds: initialData.emotionalTags?.map(tag => tag.id) || [],
+        marketTagIds: initialData.marketTags?.map(tag => tag.id) || [],
+        hasHedgePosition: !!initialData.hedgePosition,
+        hedgeOptionType: initialData.hedgePosition?.optionType || 'CALL',
+        hedgeQuantity: initialData.hedgePosition?.quantity || 0,
+        hedgeEntryPrice: initialData.hedgePosition?.entryPrice || 0,
+        hedgeExitPrice: initialData.hedgePosition?.exitPrice || undefined,
+        hedgeEntryDate: initialData.hedgePosition?.entryDate ? new Date(initialData.hedgePosition.entryDate) : undefined,
+        hedgeExitDate: initialData.hedgePosition?.exitDate ? new Date(initialData.hedgePosition.exitDate) : undefined,
+        hedgeNotes: initialData.hedgePosition?.notes || '',
+      }
+      
+      form.reset(formData)
+      console.log('Form populated with initial data:', formData)
+    }
+  }, [initialData, isEdit, form, pools, getPoolForInstrument])
 
   // Watch specific form fields for calculations
   const entryPrice = form.watch('entryPrice')
@@ -176,7 +275,7 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
 
   // Set initial default values on component mount
   useEffect(() => {
-    if (!hasSetInitialValues.current) {
+    if (!isEdit) {
       const today = new Date()
       
       // Set initial options defaults since OPTIONS is the default instrument
@@ -197,15 +296,14 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
       nextThursday.setDate(nextThursday.getDate() + (daysUntilThursday === 0 ? 7 : daysUntilThursday))
       form.setValue('expiryDate', nextThursday)
       
-      hasSetInitialValues.current = true
+      // Default values set
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Empty dependency array since this should only run once on mount
 
   // Smart defaults based on instrument selection (only when instrument changes)
-  const currentInstrument = form.watch('instrument')
   useEffect(() => {
-    if (!hasSetInitialValues.current) return
+    if (isEdit) return
     
     if (currentInstrument === 'OPTIONS') {
       // Set smart defaults for options
@@ -252,8 +350,7 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
       const today = new Date()
       form.setValue('entryDate', today)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentInstrument]) // Removed 'form' from dependencies to prevent infinite loop
+  }, [currentInstrument, isEdit, form]) // Only run when instrument changes
 
   // Calculate real-time values
   useEffect(() => {
@@ -384,15 +481,55 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
 
   const handleSave = async () => {
     try {
+      console.log('Save button clicked, isEdit:', isEdit)
+      
+      // Clean up form data before validation
+      const formData = form.getValues()
+      console.log('Raw form data before cleaning:', formData)
+      
+      const cleanedFormData = {
+        ...formData,
+        // Set brokerageValue to undefined if customBrokerage is false
+        brokerageValue: formData.customBrokerage ? formData.brokerageValue : undefined
+      }
+      
+      console.log('Cleaned form data:', cleanedFormData)
+      
+      // Update form with cleaned data
+      form.setValue('brokerageValue', cleanedFormData.brokerageValue)
+      
+      console.log('About to trigger validation...')
       const validData = await form.trigger()
+      console.log('Form validation result:', validData)
+      
       if (validData) {
-        const formData = form.getValues()
+        console.log('Form data:', cleanedFormData)
+        
         // Include the calculated charges in the form data
         const formDataWithCharges = {
-          ...formData,
+          ...cleanedFormData,
           charges: calculations.charges
         }
+        console.log('Form data with charges:', formDataWithCharges)
+        console.log('Calling onSave with data...')
         await onSave(formDataWithCharges as TradeFormData)
+        console.log('onSave completed successfully')
+      } else {
+        console.log('Form validation failed, not calling onSave')
+        const errors = form.formState.errors
+        console.log('Form errors:', errors)
+        console.log('Form values:', form.getValues())
+        console.log('Form dirty fields:', form.formState.dirtyFields)
+        console.log('Form touched fields:', form.formState.touchedFields)
+        
+        // Log each field validation individually
+        const fields = Object.keys(form.getValues())
+        for (const field of fields) {
+          const fieldError = form.formState.errors[field as keyof typeof form.formState.errors]
+          if (fieldError) {
+            console.log(`Field ${field} error:`, fieldError)
+          }
+        }
       }
     } catch (error) {
       console.error('Form validation failed:', error)
@@ -596,20 +733,20 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600 dark:text-slate-400">Gross P&L:</span>
-                        <span className={`font-medium ${calculations.grossPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          ₹{calculations.grossPnl.toFixed(2)}
+                        <span className={`font-medium ${calculations.grossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {calculations.grossPnl >= 0 ? '+' : ''}₹{calculations.grossPnl.toFixed(2)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600 dark:text-slate-400">Net P&L:</span>
-                        <span className={`font-semibold ${calculations.netPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          ₹{calculations.netPnl.toFixed(2)}
+                        <span className={`font-semibold ${calculations.netPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {calculations.netPnl >= 0 ? '+' : ''}₹{calculations.netPnl.toFixed(2)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600 dark:text-slate-400">Return %:</span>
-                        <span className={`font-semibold ${calculations.percentageReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {calculations.percentageReturn.toFixed(2)}%
+                        <span className={`font-semibold ${calculations.percentageReturn >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {calculations.percentageReturn >= 0 ? '+' : ''}{calculations.percentageReturn.toFixed(2)}%
                         </span>
                       </div>
                     </div>
@@ -1439,15 +1576,15 @@ function ReviewStep({ form, calculations }: {
                 <div className="space-y-3">
                   <span className="text-slate-600 dark:text-slate-400 font-medium">Strategy Tags</span>
                   <div className="flex flex-wrap gap-2">
-                    {formData.strategyTagIds.map((tag: string) => {
-                      const tagData = tradeData.strategyTags.find(t => t.name === tag)
+                    {formData.strategyTagIds.map((tagId: string, index: number) => {
+                      const tagData = tradeData.strategyTags.find(t => t.id === tagId)
                       return (
                         <Badge 
-                          key={tag} 
+                          key={`strategy-${tagId}-${index}`} 
                           variant="secondary" 
                           className={`${tagData?.color || 'bg-gray-100 text-gray-800 border-gray-200'} hover:${tagData?.hoverColor || 'hover:bg-gray-200'} transition-colors`}
                         >
-                          {tag}
+                          {tagData?.name || tagId}
                         </Badge>
                       )
                     })}
@@ -1493,20 +1630,20 @@ function ReviewStep({ form, calculations }: {
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                 <span className="text-slate-600 dark:text-slate-400 font-medium">Gross P&L</span>
-                <span className={`font-bold text-lg ${calculations.grossPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ₹{calculations.grossPnl.toFixed(2)}
+                <span className={`font-bold text-lg ${calculations.grossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {calculations.grossPnl >= 0 ? '+' : ''}₹{calculations.grossPnl.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                 <span className="text-slate-600 dark:text-slate-400 font-medium">Net P&L</span>
-                <span className={`font-bold text-xl ${calculations.netPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ₹{calculations.netPnl.toFixed(2)}
+                <span className={`font-bold text-xl ${calculations.netPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {calculations.netPnl >= 0 ? '+' : ''}₹{calculations.netPnl.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-slate-600 dark:text-slate-400 font-medium">Return %</span>
-                <span className={`font-bold text-xl ${calculations.percentageReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {calculations.percentageReturn.toFixed(2)}%
+                <span className={`font-bold text-xl ${calculations.percentageReturn >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {calculations.percentageReturn >= 0 ? '+' : ''}{calculations.percentageReturn.toFixed(2)}%
                 </span>
               </div>
             </div>

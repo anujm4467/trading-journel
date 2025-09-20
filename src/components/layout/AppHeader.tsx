@@ -22,7 +22,6 @@ import {
 } from 'lucide-react'
 
 interface AppHeaderProps {
-  onAddTrade: () => void
   onExport: (format: string) => void
   onDateRangeChange: (range: string) => void
   onInstrumentFilter: (instruments: string[]) => void
@@ -48,7 +47,6 @@ const instruments = [
 ]
 
 export function AppHeader({
-  onAddTrade,
   onExport,
   onDateRangeChange,
   onInstrumentFilter,

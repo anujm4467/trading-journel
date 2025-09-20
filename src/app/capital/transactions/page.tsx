@@ -45,9 +45,14 @@ export default function CapitalTransactionsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isRefreshing, setIsRefreshing] = useState(false)
   
-  const [transactionData, setTransactionData] = useState({
+  const [transactionData, setTransactionData] = useState<{
+    poolId: string
+    transactionType: 'DEPOSIT' | 'WITHDRAWAL' | 'PROFIT' | 'LOSS' | 'TRANSFER_IN' | 'TRANSFER_OUT'
+    amount: string
+    description: string
+  }>({
     poolId: '',
-    transactionType: 'DEPOSIT' as const,
+    transactionType: 'DEPOSIT',
     amount: '',
     description: ''
   })

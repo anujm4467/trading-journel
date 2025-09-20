@@ -188,54 +188,54 @@ export function TradesTable() {
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-lg border bg-card p-6">
+        <div className="rounded-lg border bg-card p-6 backdrop-blur-sm bg-gradient-to-br from-white/90 to-slate-50/90 dark:from-gray-800/90 dark:to-gray-900/90 border-white/20 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Trades</p>
-              <p className="text-2xl font-bold">{totalTrades}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{totalTrades}</p>
             </div>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-primary font-bold text-sm">T</span>
+            <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <span className="text-blue-600 dark:text-blue-400 font-bold text-sm">T</span>
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-6">
+        <div className="rounded-lg border bg-card p-6 backdrop-blur-sm bg-gradient-to-br from-white/90 to-slate-50/90 dark:from-gray-800/90 dark:to-gray-900/90 border-white/20 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Net P&L</p>
-              <p className={`text-2xl font-bold ${totalNetPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                {formatCurrency(totalNetPnl)}
+              <p className={`text-2xl font-bold ${totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {totalNetPnl >= 0 ? '+' : ''}{formatCurrency(totalNetPnl)}
               </p>
             </div>
-            <div className="h-8 w-8 rounded-full bg-profit/10 flex items-center justify-center">
-              <span className="text-profit font-bold text-sm">₹</span>
+            <div className={`h-8 w-8 rounded-full ${totalNetPnl >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'} flex items-center justify-center`}>
+              <span className={`font-bold text-sm ${totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>₹</span>
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-6">
+        <div className="rounded-lg border bg-card p-6 backdrop-blur-sm bg-gradient-to-br from-white/90 to-slate-50/90 dark:from-gray-800/90 dark:to-gray-900/90 border-white/20 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Win Rate</p>
-              <p className="text-2xl font-bold">{formatPercentage(winRate)}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatPercentage(winRate)}</p>
             </div>
-            <div className="h-8 w-8 rounded-full bg-success/10 flex items-center justify-center">
-              <span className="text-success font-bold text-sm">%</span>
+            <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">%</span>
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-6">
+        <div className="rounded-lg border bg-card p-6 backdrop-blur-sm bg-gradient-to-br from-white/90 to-slate-50/90 dark:from-gray-800/90 dark:to-gray-900/90 border-white/20 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Avg Trade</p>
-              <p className={`text-2xl font-bold ${avgTrade >= 0 ? 'text-profit' : 'text-loss'}`}>
-                {formatCurrency(avgTrade)}
+              <p className={`text-2xl font-bold ${avgTrade >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {avgTrade >= 0 ? '+' : ''}{formatCurrency(avgTrade)}
               </p>
             </div>
-            <div className="h-8 w-8 rounded-full bg-info/10 flex items-center justify-center">
-              <span className="text-info font-bold text-sm">A</span>
+            <div className={`h-8 w-8 rounded-full ${avgTrade >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'} flex items-center justify-center`}>
+              <span className={`font-bold text-sm ${avgTrade >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>A</span>
             </div>
           </div>
         </div>
@@ -299,10 +299,10 @@ export function TradesTable() {
       </div>
 
       {/* Trades Table */}
-      <div className="rounded-md border">
+      <div className="rounded-xl border backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-white/20 dark:border-gray-700/50 shadow-lg overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-gray-800 dark:to-gray-700 border-b border-slate-200 dark:border-gray-600">
               <TableHead className="w-12">
                 <Checkbox
                   checked={selectedTrades.length === trades.length && trades.length > 0}
@@ -382,9 +382,9 @@ export function TradesTable() {
               return (
                 <TableRow 
                   key={trade.id}
-                  className={`${selectedTrades.includes(trade.id) ? 'bg-muted/50' : ''} ${
-                    isOpen ? 'border-l-4 border-l-warning' : ''
-                  } cursor-pointer hover:bg-muted/30 transition-colors`}
+                  className={`${selectedTrades.includes(trade.id) ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''} ${
+                    isOpen ? 'border-l-4 border-l-orange-500' : ''
+                  } cursor-pointer hover:bg-slate-50/50 dark:hover:bg-gray-700/50 transition-all duration-200 border-b border-slate-100 dark:border-gray-700`}
                   onClick={() => handleTradeClick(trade.id)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
@@ -424,11 +424,11 @@ export function TradesTable() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <span className={
+                    <span className={`font-medium ${
                       trade.position === 'BUY' 
-                        ? 'text-profit font-medium' 
-                        : 'text-loss font-medium'
-                    }>
+                        ? 'text-green-600 dark:text-green-400' 
+                        : 'text-red-600 dark:text-red-400'
+                    }`}>
                       {trade.position}
                     </span>
                   </TableCell>
@@ -445,8 +445,8 @@ export function TradesTable() {
                   </TableCell>
                   <TableCell className="text-right">
                     {grossPnl !== null ? (
-                      <span className={grossPnl >= 0 ? 'text-profit font-medium' : 'text-loss font-medium'}>
-                        {formatCurrency(grossPnl)}
+                      <span className={`font-medium ${grossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {grossPnl >= 0 ? '+' : ''}{formatCurrency(grossPnl)}
                       </span>
                     ) : '--'}
                   </TableCell>
@@ -456,12 +456,12 @@ export function TradesTable() {
                   <TableCell className="text-right">
                     {netPnl !== null ? (
                       <div>
-                        <div className={netPnl >= 0 ? 'text-profit font-bold' : 'text-loss font-bold'}>
-                          {formatCurrency(netPnl)}
+                        <div className={`font-bold ${netPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {netPnl >= 0 ? '+' : ''}{formatCurrency(netPnl)}
                         </div>
                         {percentageReturn !== null && (
-                          <div className={`text-xs ${percentageReturn >= 0 ? 'text-profit' : 'text-loss'}`}>
-                            {formatPercentage(percentageReturn)}
+                          <div className={`text-xs ${percentageReturn >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {percentageReturn >= 0 ? '+' : ''}{formatPercentage(percentageReturn)}
                           </div>
                         )}
                       </div>

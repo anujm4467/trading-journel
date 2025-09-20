@@ -74,76 +74,238 @@ export async function PUT(
       )
     }
 
-    // Update trade
-    const updatedTrade = await prisma.trade.update({
-      where: { id: tradeId },
-      data: {
-        symbol: body.symbol,
-        instrument: body.instrument,
-        position: body.position,
-        quantity: body.quantity,
-        entryPrice: body.entryPrice,
-        exitPrice: body.exitPrice,
-        entryDate: body.entryDate ? new Date(body.entryDate) : undefined,
-        exitDate: body.exitDate ? new Date(body.exitDate) : undefined,
-        // Strategy will be handled through strategyTags relationship
-        emotionalState: body.emotionalState,
-        notes: body.notes,
-        stopLoss: body.stopLoss,
-        target: body.target,
-        confidenceLevel: body.confidenceLevel,
-        // Update charges if provided
-        ...(body.charges && {
-          charges: {
-            update: body.charges
-          }
-        }),
-        // Update strategy tags if provided
-        ...(body.strategyTags && {
+    // Calculate updated values
+    const entryValue = body.quantity * body.entryPrice
+    const exitValue = body.exitPrice ? body.quantity * body.exitPrice : null
+    const turnover = entryValue + (exitValue || 0)
+    
+    // Calculate gross P&L based on position
+    let grossPnl = null
+    if (exitValue) {
+      if (body.position === 'BUY') {
+        grossPnl = exitValue - entryValue
+      } else {
+        grossPnl = entryValue - exitValue
+      }
+    }
+    
+    const netPnl = grossPnl ? grossPnl - (body.totalCharges || 0) : null
+    const percentageReturn = grossPnl ? (grossPnl / entryValue) * 100 : null
+
+    // Update trade with capital pool handling
+    const updatedTrade = await prisma.$transaction(async (tx) => {
+      // Update the trade
+      const updated = await tx.trade.update({
+        where: { id: tradeId },
+        data: {
+          tradeType: body.tradeType,
+          symbol: body.symbol,
+          instrument: body.instrument,
+          position: body.position,
+          quantity: body.quantity,
+          entryPrice: body.entryPrice,
+          exitPrice: body.exitPrice,
+          entryDate: body.entryDate ? new Date(body.entryDate) : undefined,
+          exitDate: body.exitDate ? new Date(body.exitDate) : undefined,
+          entryValue,
+          exitValue,
+          turnover,
+          grossPnl,
+          netPnl,
+          totalCharges: body.totalCharges,
+          percentageReturn,
+          emotionalState: body.emotionalState,
+          marketCondition: body.marketCondition,
+          planning: body.planning,
+          notes: body.notes,
+          stopLoss: body.stopLoss,
+          target: body.target,
+          confidenceLevel: body.confidenceLevel,
+          brokerName: body.brokerName,
+          customBrokerage: body.customBrokerage,
+          brokerageType: body.brokerageType,
+          brokerageValue: body.brokerageValue,
+          // Update charges if provided
+          ...(body.charges && {
+            charges: {
+              update: body.charges
+            }
+          }),
+          // Update strategy tags if provided
+          ...(body.strategyTags && {
+            strategyTags: {
+              deleteMany: {},
+              create: body.strategyTags.map((tagId: string) => ({
+                strategyTagId: tagId
+              }))
+            }
+          }),
+          // Update emotional tags if provided
+          ...(body.emotionalTags && {
+            emotionalTags: {
+              deleteMany: {},
+              create: body.emotionalTags.map((tagId: string) => ({
+                emotionalTagId: tagId
+              }))
+            }
+          }),
+          // Update market tags if provided
+          ...(body.marketTags && {
+            marketTags: {
+              deleteMany: {},
+              create: body.marketTags.map((tagId: string) => ({
+                marketTagId: tagId
+              }))
+            }
+          }),
+          // Update options trade if provided
+          ...(body.instrument === 'OPTIONS' && body.optionType && {
+            optionsTrade: {
+              upsert: {
+                create: {
+                  optionType: body.optionType,
+                  strikePrice: body.strikePrice || 0,
+                  expiryDate: body.expiryDate ? new Date(body.expiryDate) : new Date(),
+                  lotSize: body.lotSize || 50,
+                  underlying: body.symbol
+                },
+                update: {
+                  optionType: body.optionType,
+                  strikePrice: body.strikePrice || 0,
+                  expiryDate: body.expiryDate ? new Date(body.expiryDate) : new Date(),
+                  lotSize: body.lotSize || 50,
+                  underlying: body.symbol
+                }
+              }
+            }
+          }),
+          // Update hedge position if provided
+          ...(body.hasHedgePosition && {
+            hedgePosition: {
+              upsert: {
+                create: {
+                  position: body.hedgePosition || 'BUY',
+                  entryDate: body.hedgeEntryDate ? new Date(body.hedgeEntryDate) : new Date(),
+                  entryPrice: body.hedgeEntryPrice || 0,
+                  quantity: body.hedgeQuantity || 0,
+                  exitDate: body.hedgeExitDate ? new Date(body.hedgeExitDate) : undefined,
+                  exitPrice: body.hedgeExitPrice,
+                  entryValue: (body.hedgeEntryPrice || 0) * (body.hedgeQuantity || 0),
+                  exitValue: body.hedgeExitPrice ? body.hedgeExitPrice * (body.hedgeQuantity || 0) : undefined,
+                  notes: body.hedgeNotes
+                },
+                update: {
+                  position: body.hedgePosition || 'BUY',
+                  entryDate: body.hedgeEntryDate ? new Date(body.hedgeEntryDate) : new Date(),
+                  entryPrice: body.hedgeEntryPrice || 0,
+                  quantity: body.hedgeQuantity || 0,
+                  exitDate: body.hedgeExitDate ? new Date(body.hedgeExitDate) : undefined,
+                  exitPrice: body.hedgeExitPrice,
+                  entryValue: (body.hedgeEntryPrice || 0) * (body.hedgeQuantity || 0),
+                  exitValue: body.hedgeExitPrice ? body.hedgeExitPrice * (body.hedgeQuantity || 0) : undefined,
+                  notes: body.hedgeNotes
+                }
+              }
+            }
+          })
+        },
+        include: {
+          charges: true,
+          optionsTrade: true,
+          hedgePosition: {
+            include: {
+              charges: true
+            }
+          },
           strategyTags: {
-            deleteMany: {},
-            create: body.strategyTags.map((tagId: string) => ({
-              strategyTagId: tagId
-            }))
-          }
-        }),
-        // Update emotional tags if provided
-        ...(body.emotionalTags && {
+            include: {
+              strategyTag: true
+            }
+          },
           emotionalTags: {
-            deleteMany: {},
-            create: body.emotionalTags.map((tagId: string) => ({
-              emotionalTagId: tagId
-            }))
-          }
-        }),
-        // Update market tags if provided
-        ...(body.marketTags && {
+            include: {
+              emotionalTag: true
+            }
+          },
           marketTags: {
-            deleteMany: {},
-            create: body.marketTags.map((tagId: string) => ({
-              marketTagId: tagId
-            }))
+            include: {
+              marketTag: true
+            }
           }
+        }
+      })
+
+      // Handle capital pool transactions if trade is being exited (after main transaction)
+      if (body.exitPrice && !existingTrade.exitPrice && body.capitalPoolId) {
+        // Trade is being closed - handle based on trade type
+        const capitalPool = await prisma.capitalPool.findUnique({
+          where: { id: body.capitalPoolId }
         })
-      },
-      include: {
-        charges: true,
-        strategyTags: {
-          include: {
-            strategyTag: true
-          }
-        },
-        emotionalTags: {
-          include: {
-            emotionalTag: true
-          }
-        },
-        marketTags: {
-          include: {
-            marketTag: true
+
+        if (capitalPool) {
+          // For options intraday trades, only add P&L (no investment tracking)
+          if (body.tradeType === 'INTRADAY' && body.instrument === 'OPTIONS') {
+            if (netPnl !== null) {
+              const pnlTransactionType = netPnl >= 0 ? 'PROFIT' : 'LOSS'
+              const pnlAmount = Math.abs(netPnl)
+              
+              await prisma.capitalTransaction.create({
+                data: {
+                  poolId: body.capitalPoolId,
+                  transactionType: pnlTransactionType,
+                  amount: pnlAmount,
+                  description: `Options Intraday P&L: ${body.symbol} - ${netPnl >= 0 ? 'Profit' : 'Loss'}`,
+                  referenceId: tradeId,
+                  referenceType: 'TRADE',
+                  balanceAfter: capitalPool.currentAmount + netPnl
+                }
+              })
+
+              // Add P&L to capital pool
+              await prisma.capitalPool.update({
+                where: { id: body.capitalPoolId },
+                data: {
+                  currentAmount: capitalPool.currentAmount + netPnl,
+                  totalPnl: capitalPool.totalPnl + netPnl
+                }
+              })
+            }
+          } else {
+            // For other trades, return invested amount and add P&L
+            const investedAmount = entryValue
+            
+            // Create P&L transaction
+            if (netPnl !== null) {
+              const pnlTransactionType = netPnl >= 0 ? 'PROFIT' : 'LOSS'
+              const pnlAmount = Math.abs(netPnl)
+              
+              await prisma.capitalTransaction.create({
+                data: {
+                  poolId: body.capitalPoolId,
+                  transactionType: pnlTransactionType,
+                  amount: pnlAmount,
+                  description: `Trade P&L: ${body.symbol} - ${netPnl >= 0 ? 'Profit' : 'Loss'}`,
+                  referenceId: tradeId,
+                  referenceType: 'TRADE',
+                  balanceAfter: capitalPool.currentAmount + investedAmount + netPnl
+                }
+              })
+            }
+
+            // Return invested amount back to capital pool and add P&L
+            await prisma.capitalPool.update({
+              where: { id: body.capitalPoolId },
+              data: {
+                currentAmount: capitalPool.currentAmount + investedAmount + (netPnl || 0),
+                totalInvested: capitalPool.totalInvested - investedAmount, // Remove from invested
+                totalPnl: capitalPool.totalPnl + (netPnl || 0)
+              }
+            })
           }
         }
       }
+
+      return updated
     })
 
     return NextResponse.json(updatedTrade)

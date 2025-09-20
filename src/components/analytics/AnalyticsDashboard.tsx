@@ -213,8 +213,8 @@ export function AnalyticsDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600 mb-2">
-                  ₹{data.overview.averageWin.toLocaleString()}
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
+                  +₹{data.overview.averageWin.toLocaleString()}
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Per winning trade
@@ -233,8 +233,8 @@ export function AnalyticsDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-red-600 mb-2">
-                  ₹{Math.abs(data.overview.averageLoss).toLocaleString()}
+                <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">
+                  -₹{Math.abs(data.overview.averageLoss).toLocaleString()}
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Per losing trade
@@ -253,8 +253,8 @@ export function AnalyticsDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-blue-600 mb-2">
-                  ₹{data.overview.totalGrossPnl.toLocaleString()}
+                <div className={`text-3xl font-bold mb-2 ${data.overview.totalGrossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {data.overview.totalGrossPnl >= 0 ? '+' : ''}₹{data.overview.totalGrossPnl.toLocaleString()}
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Before charges

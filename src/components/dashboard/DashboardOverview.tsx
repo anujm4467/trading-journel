@@ -58,15 +58,21 @@ export function DashboardOverview() {
         <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Net P&L</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-500" />
+            <DollarSign className={`h-4 w-4 ${data.overview.totalNetPnl >= 0 ? 'text-green-500' : 'text-red-500'}`} />
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-              ₹{data.overview.totalNetPnl.toLocaleString()}
+            <div className={`text-3xl font-bold ${data.overview.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              {data.overview.totalNetPnl >= 0 ? '+' : ''}₹{data.overview.totalNetPnl.toLocaleString()}
             </div>
             <div className="flex items-center text-sm mt-1">
-              <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
-              <span className="text-green-600 dark:text-green-400 font-medium">+12.8%</span>
+              {data.overview.totalNetPnl >= 0 ? (
+                <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
+              ) : (
+                <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" />
+              )}
+              <span className={`font-medium ${data.overview.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {data.overview.totalNetPnl >= 0 ? '+' : ''}12.8%
+              </span>
               <span className="text-muted-foreground ml-1">from last month</span>
             </div>
           </CardContent>
@@ -93,10 +99,18 @@ export function DashboardOverview() {
             <Activity className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">₹{Math.round(data.overview.totalNetPnl / data.overview.totalTrades).toLocaleString()}</div>
+            <div className={`text-3xl font-bold ${Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              {Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl / data.overview.totalTrades).toLocaleString()}
+            </div>
             <div className="flex items-center text-sm mt-1">
-              <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" />
-              <span className="text-red-600 dark:text-red-400 font-medium">-5.2%</span>
+              {Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? (
+                <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
+              ) : (
+                <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" />
+              )}
+              <span className={`font-medium ${Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? '+' : ''}5.2%
+              </span>
               <span className="text-muted-foreground ml-1">from last month</span>
             </div>
           </CardContent>
@@ -182,7 +196,7 @@ export function DashboardOverview() {
                     </div>
                   </div>
                   <div className={`font-bold text-sm ${
-                    trade.type === 'profit' ? 'text-green-600' : 'text-red-600'
+                    trade.type === 'profit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                   }`}>
                     {trade.type === 'profit' ? '+' : ''}₹{trade.pnl.toLocaleString()}
                   </div>
@@ -308,8 +322,10 @@ export function DashboardOverview() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-4">
-              <div className="text-center p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg border border-green-100 dark:border-green-800">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">₹{data.overview.totalNetPnl.toLocaleString()}</div>
+              <div className={`text-center p-4 rounded-lg border ${data.overview.totalNetPnl >= 0 ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-100 dark:border-green-800' : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-100 dark:border-red-800'}`}>
+                <div className={`text-2xl font-bold ${data.overview.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {data.overview.totalNetPnl >= 0 ? '+' : ''}₹{data.overview.totalNetPnl.toLocaleString()}
+                </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Total P&L</div>
               </div>
               
@@ -324,8 +340,10 @@ export function DashboardOverview() {
                 </div>
               </div>
 
-              <div className="text-center p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-100 dark:border-purple-800">
-                <div className="text-lg font-bold text-purple-600 dark:text-purple-400">₹{Math.round(data.overview.totalNetPnl / data.overview.totalTrades).toLocaleString()}</div>
+              <div className={`text-center p-3 rounded-lg border ${Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-100 dark:border-green-800' : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-100 dark:border-red-800'}`}>
+                <div className={`text-lg font-bold ${Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl / data.overview.totalTrades).toLocaleString()}
+                </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Avg Trade</div>
               </div>
             </div>

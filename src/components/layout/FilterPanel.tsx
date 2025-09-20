@@ -221,15 +221,15 @@ export function FilterPanel({
                 <div className="space-y-2">
                   <Label>Position Type</Label>
                   <div className="space-y-2">
-                    {['BUY', 'SELL', 'LONG', 'SHORT'].map((position) => (
+                    {['BUY', 'SELL'].map((position) => (
                       <div key={position} className="flex items-center space-x-2">
                         <Checkbox
                           id={position}
-                          checked={localFilters.positions?.includes(position as 'BUY' | 'SELL' | 'LONG' | 'SHORT') || false}
+                          checked={localFilters.positions?.includes(position as 'BUY' | 'SELL') || false}
                           onCheckedChange={(checked) => {
                             const current = localFilters.positions || []
                             const newValue = checked
-                              ? [...current, position as 'BUY' | 'SELL' | 'LONG' | 'SHORT']
+                              ? [...current, position as 'BUY' | 'SELL']
                               : current.filter(p => p !== position)
                             handleFilterChange('positions', newValue)
                           }}

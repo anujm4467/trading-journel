@@ -3,24 +3,127 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { MainLayout } from '@/components/layout/MainLayout'
-import { TradeDetailsView } from '@/components/trades/TradeDetailsView'
+import { TradeFormPage } from '@/components/forms/TradeFormPage'
 import { useTrades } from '@/hooks/useTrades'
+import { TradeFormData } from '@/types/trade'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Edit, Trash2, Loader2 } from 'lucide-react'
-import Link from 'next/link'
-import { TradeDetails } from '@/types/tradeDetails'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 import { Trade } from '@/types/trade'
+import { TradeDetails } from '@/types/tradeDetails'
 
-export default function TradeDetailsPage() {
+export default function EditTradePage() {
   const params = useParams()
   const router = useRouter()
-  const { getTradeById, deleteTrade } = useTrades()
-  const [trade, setTrade] = useState<TradeDetails | null>(null)
+  const { getTradeById, updateTrade } = useTrades()
+  const [trade, setTrade] = useState<Trade | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const tradeId = params.id as string
+
+  useEffect(() => {
+    const fetchTrade = async () => {
+      try {
+        setLoading(true)
+        const tradeData = await getTradeById(tradeId)
+        setTrade(tradeData)
+      } catch (err) {
+        setError('Failed to load trade details')
+        console.error('Error fetching trade:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (tradeId) {
+      fetchTrade()
+    }
+  }, [tradeId, getTradeById])
+
+  const handleSave = async (data: TradeFormData) => {
+    console.log('handleSave called in edit page with data:', data)
+    if (!tradeId) {
+      console.error('No tradeId available')
+      return
+    }
+    
+    setIsSubmitting(true)
+    try {
+      console.log('Calling updateTrade with tradeId:', tradeId)
+      
+      // Transform the data to match the Trade type
+      const tradeData: Partial<Trade> = {
+        ...data,
+        hedgePosition: data.hedgePosition ? {
+          id: '',
+          tradeId: tradeId,
+          position: data.hedgePosition,
+          entryDate: data.hedgeEntryDate || new Date(),
+          entryPrice: data.hedgeEntryPrice || 0,
+          quantity: data.hedgeQuantity || 0,
+          exitDate: data.hedgeExitDate || null,
+          exitPrice: data.hedgeExitPrice || null,
+          entryValue: (data.hedgeEntryPrice || 0) * (data.hedgeQuantity || 0),
+          exitValue: data.hedgeExitPrice ? data.hedgeExitPrice * (data.hedgeQuantity || 0) : null,
+          grossPnl: null,
+          netPnl: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        } : null
+      }
+      
+      await updateTrade(tradeId, tradeData)
+      console.log('updateTrade completed successfully')
+      router.push(`/trades/${tradeId}`)
+    } catch (err) {
+      console.error('Error updating trade:', err)
+      alert('Failed to update trade')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSaveDraft = async (data: TradeFormData) => {
+    if (!tradeId) return
+    
+    setIsSubmitting(true)
+    try {
+      // Transform the data to match the Trade type
+      const tradeData: Partial<Trade> = {
+        ...data,
+        isDraft: true,
+        hedgePosition: data.hedgePosition ? {
+          id: '',
+          tradeId: tradeId,
+          position: data.hedgePosition,
+          entryDate: data.hedgeEntryDate || new Date(),
+          entryPrice: data.hedgeEntryPrice || 0,
+          quantity: data.hedgeQuantity || 0,
+          exitDate: data.hedgeExitDate || null,
+          exitPrice: data.hedgeExitPrice || null,
+          entryValue: (data.hedgeEntryPrice || 0) * (data.hedgeQuantity || 0),
+          exitValue: data.hedgeExitPrice ? data.hedgeExitPrice * (data.hedgeQuantity || 0) : null,
+          grossPnl: null,
+          netPnl: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        } : null
+      }
+      
+      await updateTrade(tradeId, tradeData)
+      router.push(`/trades/${tradeId}`)
+    } catch (err) {
+      console.error('Error saving draft:', err)
+      alert('Failed to save draft')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleCancel = () => {
+    router.push(`/trades/${tradeId}`)
+  }
 
   // Convert Trade to TradeDetails format for the form
   const convertTradeToDetails = (trade: Trade): TradeDetails => {
@@ -116,42 +219,6 @@ export default function TradeDetailsPage() {
     }
   }
 
-  useEffect(() => {
-    const fetchTrade = async () => {
-      try {
-        setLoading(true)
-        const tradeData = await getTradeById(tradeId)
-        setTrade(convertTradeToDetails(tradeData))
-      } catch (err) {
-        setError('Failed to load trade details')
-        console.error('Error fetching trade:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (tradeId) {
-      fetchTrade()
-    }
-  }, [tradeId, getTradeById])
-
-  const handleDelete = async () => {
-    if (!trade) return
-    
-    if (window.confirm('Are you sure you want to delete this trade? This action cannot be undone.')) {
-      setIsDeleting(true)
-      try {
-        await deleteTrade(trade.id)
-        router.push('/trades')
-      } catch (err) {
-        console.error('Error deleting trade:', err)
-        alert('Failed to delete trade')
-      } finally {
-        setIsDeleting(false)
-      }
-    }
-  }
-
   if (loading) {
     return (
       <MainLayout>
@@ -185,48 +252,32 @@ export default function TradeDetailsPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push('/trades')}
+              onClick={() => router.push(`/trades/${trade.id}`)}
               className="text-slate-600 hover:text-slate-900"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Trades
+              Back to Trade Details
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                Trade Details
+                Edit Trade
               </h1>
               <p className="text-slate-600 dark:text-slate-400">
                 {trade.symbol} - {trade.instrument} - {trade.position}
               </p>
             </div>
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3">
-            <Link href={`/trades/${trade.id}/edit`}>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Edit className="w-4 h-4" />
-                Edit Trade
-              </Button>
-            </Link>
-            <Button 
-              variant="outline" 
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              {isDeleting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-              Delete Trade
-            </Button>
-          </div>
         </div>
 
-        {/* Trade Details Content */}
-        <TradeDetailsView trade={trade} />
+        {/* Trade Form */}
+        <TradeFormPage
+          initialData={trade ? convertTradeToDetails(trade) : undefined}
+          isEdit={true}
+          onSave={handleSave}
+          onSaveDraft={handleSaveDraft}
+          onCancel={handleCancel}
+          isSubmitting={isSubmitting}
+        />
       </div>
     </MainLayout>
   )

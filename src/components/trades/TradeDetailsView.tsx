@@ -7,12 +7,8 @@ import {
   Calculator, 
   Shield, 
   Brain, 
-  TrendingUp, 
-  TrendingDown,
   BarChart3,
-  LineChart,
-  Clock,
-  Calendar
+  Clock
 } from 'lucide-react'
 import tradeData from '@/data/tradeData.json'
 import { TradeDetails } from '@/types/tradeDetails'
@@ -50,7 +46,7 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
   
   // If charges are stored in the database as an array, process them
   if (trade.charges && Array.isArray(trade.charges)) {
-    trade.charges.forEach((charge: any) => {
+    trade.charges.forEach((charge: { chargeType: string; amount: number }) => {
       switch (charge.chargeType) {
         case 'BROKERAGE':
           charges.brokerage = charge.amount
@@ -83,7 +79,7 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
     // If charges are in object format, use them directly
     charges = { ...trade.charges }
     charges.gst = charges.brokerage * 0.18
-    charges.total = Object.values(charges).reduce((sum: number, val: any) => 
+    charges.total = Object.values(charges).reduce((sum: number, val: number) => 
       typeof val === 'number' ? sum + val : sum, 0
     )
   } else {
@@ -98,7 +94,7 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
       total: 0
     }
     charges.gst = charges.brokerage * 0.18
-    charges.total = Object.values(charges).reduce((sum: number, val: any) => 
+    charges.total = Object.values(charges).reduce((sum: number, val: number) => 
       typeof val === 'number' ? sum + val : sum, 0
     )
   }
@@ -368,20 +364,20 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex justify-between items-center py-3 px-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Gross P&L</span>
-              <span className={`font-bold text-lg ${grossPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ₹{grossPnl.toFixed(2)}
+              <span className={`font-bold text-lg ${grossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {grossPnl >= 0 ? '+' : ''}₹{grossPnl.toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between items-center py-3 px-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Net P&L</span>
-              <span className={`font-bold text-xl ${netPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ₹{netPnl.toFixed(2)}
+              <span className={`font-bold text-xl ${netPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {netPnl >= 0 ? '+' : ''}₹{netPnl.toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between items-center py-3 px-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Return %</span>
-              <span className={`font-bold text-xl ${percentageReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {percentageReturn.toFixed(2)}%
+              <span className={`font-bold text-xl ${percentageReturn >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {percentageReturn >= 0 ? '+' : ''}{percentageReturn.toFixed(2)}%
               </span>
             </div>
           </div>
@@ -405,8 +401,8 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                   <span className="text-slate-600 dark:text-slate-400 font-medium">Hedge Position</span>
-                  <Badge variant="outline" className={`${trade.hedgePosition.position === 'BUY' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                    {trade.hedgePosition.position}
+                  <Badge variant="outline" className={`${trade.hedgePosition.optionType === 'CALL' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                    {trade.hedgePosition.optionType}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
@@ -451,7 +447,7 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
                     </span>
                   </div>
                 )}
-                {trade.hedgePosition.grossPnl !== null && (
+                {trade.hedgePosition.grossPnl !== null && trade.hedgePosition.grossPnl !== undefined && (
                   <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                     <span className="text-slate-600 dark:text-slate-400 font-medium">Hedge Gross P&L</span>
                     <span className={`font-bold ${trade.hedgePosition.grossPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -459,7 +455,7 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
                     </span>
                   </div>
                 )}
-                {trade.hedgePosition.netPnl !== null && (
+                {trade.hedgePosition.netPnl !== null && trade.hedgePosition.netPnl !== undefined && (
                   <div className="flex justify-between items-center py-2">
                     <span className="text-slate-600 dark:text-slate-400 font-medium">Hedge Net P&L</span>
                     <span className={`font-bold text-lg ${trade.hedgePosition.netPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -567,7 +563,7 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Strategy Tags</h4>
                   <div className="flex flex-wrap gap-2">
-                    {trade.strategyTags.map((tag: any) => (
+                    {trade.strategyTags.map((tag: { strategyTagId?: string; id?: string; strategyTag?: { name: string; color?: string; hoverColor?: string }; name?: string }) => (
                       <Badge 
                         key={tag.strategyTagId || tag.id} 
                         variant="secondary" 
@@ -584,7 +580,7 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Emotional Tags</h4>
                   <div className="flex flex-wrap gap-2">
-                    {trade.emotionalTags.map((tag: any) => (
+                    {trade.emotionalTags.map((tag: { emotionalTagId?: string; id?: string; emotionalTag?: { name: string; color?: string; hoverColor?: string }; name?: string }) => (
                       <Badge 
                         key={tag.emotionalTagId || tag.id} 
                         variant="secondary" 
@@ -601,7 +597,7 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Market Tags</h4>
                   <div className="flex flex-wrap gap-2">
-                    {trade.marketTags.map((tag: any) => (
+                    {trade.marketTags.map((tag: { marketTagId?: string; id?: string; marketTag?: { name: string; color?: string; hoverColor?: string }; name?: string }) => (
                       <Badge 
                         key={tag.marketTagId || tag.id} 
                         variant="secondary" 

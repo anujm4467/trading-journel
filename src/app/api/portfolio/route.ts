@@ -4,10 +4,17 @@ import { prisma } from '../../../../lib/prisma'
 // GET /api/portfolio - Get portfolio data
 export async function GET() {
   try {
-    // Get all open positions (trades without exit price)
+    // Get all open positions (trades without exit price, excluding options intraday)
     const openPositions = await prisma.trade.findMany({
       where: {
-        exitPrice: null
+        exitPrice: null,
+        // Exclude options intraday trades as they should be closed by end of day
+        NOT: {
+          AND: [
+            { instrument: 'OPTIONS' },
+            { tradeType: 'INTRADAY' }
+          ]
+        }
       },
       include: {
         charges: true,
@@ -36,8 +43,10 @@ export async function GET() {
 
     const positionSummary = openPositions.map(position => {
       const invested = position.quantity * position.entryPrice
-      const currentValue = position.quantity * (position.exitPrice || position.entryPrice)
-      const pnl = currentValue - invested
+      // For open positions, current value should be based on current market price
+      // Since we don't have real-time prices, we'll use entry price as placeholder
+      const currentValue = position.quantity * position.entryPrice
+      const pnl = 0 // Unrealized P&L would be calculated with real-time prices
       
       totalCurrentValue += currentValue
       totalInvested += invested
@@ -50,11 +59,11 @@ export async function GET() {
         side: position.position,
         quantity: position.quantity,
         entryPrice: position.entryPrice,
-        currentPrice: position.exitPrice || position.entryPrice,
+        currentPrice: position.entryPrice, // Use entry price as placeholder
         invested,
         currentValue,
         pnl,
-        pnlPercentage: invested > 0 ? (pnl / invested) * 100 : 0,
+        pnlPercentage: 0, // Would be calculated with real-time prices
         entryDate: position.entryDate,
         strategy: position.strategyTags?.[0]?.strategyTag?.name || null
       }

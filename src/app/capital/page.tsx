@@ -35,9 +35,14 @@ export default function CapitalPage() {
     fnoAmount: '',
     description: ''
   })
-  const [transactionData, setTransactionData] = useState({
+  const [transactionData, setTransactionData] = useState<{
+    poolId: string
+    transactionType: 'DEPOSIT' | 'WITHDRAWAL' | 'PROFIT' | 'LOSS' | 'TRANSFER_IN' | 'TRANSFER_OUT'
+    amount: string
+    description: string
+  }>({
     poolId: '',
-    transactionType: 'DEPOSIT' as const,
+    transactionType: 'DEPOSIT',
     amount: '',
     description: ''
   })

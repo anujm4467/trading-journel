@@ -165,7 +165,7 @@ export function useTrades(initialFilters: TradesFilters = {}): UseTradesReturn {
       }
       
       if (response.data) {
-        return response.data as Trade
+        return response.data as unknown as Trade
       }
       
       throw new Error('Trade not found')

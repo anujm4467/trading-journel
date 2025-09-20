@@ -29,7 +29,7 @@ export function calculateCharges(
 ): ChargeCalculation {
   const rates = { ...DEFAULT_CHARGE_RATES, ...customRates }
   const turnover = entryValue + exitValue
-  const sellValue = position === 'SELL' || position === 'SHORT' ? exitValue : entryValue
+  const sellValue = position === 'SELL' ? exitValue : entryValue
 
   // Brokerage (flat per side)
   const brokerage = rates.brokerage.type === 'flat' 
@@ -38,7 +38,7 @@ export function calculateCharges(
 
   // STT (Securities Transaction Tax)
   let stt = 0
-  if (position === 'SELL' || position === 'SHORT') {
+  if (position === 'SELL') {
     switch (instrument) {
       case 'EQUITY':
         stt = sellValue * rates.stt.equity
@@ -88,7 +88,7 @@ export function calculatePnL(
 } {
   // Gross P&L calculation based on position
   let grossPnl: number
-  if (position === 'BUY' || position === 'LONG') {
+  if (position === 'BUY') {
     grossPnl = exitValue - entryValue
   } else {
     grossPnl = entryValue - exitValue
@@ -119,7 +119,7 @@ export function calculateHedgePnL(
 } {
   // Hedge position P&L calculation (opposite to main position)
   let grossPnl: number
-  if (position === 'BUY' || position === 'LONG') {
+  if (position === 'BUY') {
     grossPnl = exitValue - entryValue
   } else {
     grossPnl = entryValue - exitValue
@@ -176,7 +176,11 @@ export function calculateCombinedPnL(
     mainTrade.position
   )
 
-  let hedgePnL: any = undefined
+  let hedgePnL: {
+    grossPnl: number
+    netPnl: number
+    percentageReturn: number
+  } | undefined = undefined
   let combined = {
     grossPnl: mainPnL.grossPnl,
     netPnl: mainPnL.netPnl,

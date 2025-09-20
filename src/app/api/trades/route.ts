@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
     const percentageReturn = grossPnl ? (grossPnl / entryValue) * 100 : null
 
     // Handle tag creation separately
-    const strategyTagIds = []
+    const strategyTagIds: string[] = []
     if (validatedData.strategyTagIds && validatedData.strategyTagIds.length > 0) {
       for (const tagNameOrId of validatedData.strategyTagIds) {
         // Check if it's an ID or a name
@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const emotionalTagIds = []
+    const emotionalTagIds: string[] = []
     if (validatedData.emotionalTagIds && validatedData.emotionalTagIds.length > 0) {
       for (const tagNameOrId of validatedData.emotionalTagIds) {
         let emotionalTagId = tagNameOrId
@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const marketTagIds = []
+    const marketTagIds: string[] = []
     if (validatedData.marketTagIds && validatedData.marketTagIds.length > 0) {
       for (const tagNameOrId of validatedData.marketTagIds) {
         let marketTagId = tagNameOrId
@@ -451,70 +451,100 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Handle capital pool transactions
+    // Handle capital pool transactions after the main transaction
     if (validatedData.capitalPoolId) {
       // Get the capital pool
-      const capitalPool = await tx.capitalPool.findUnique({
+      const capitalPool = await prisma.capitalPool.findUnique({
         where: { id: validatedData.capitalPoolId }
       })
 
       if (capitalPool) {
-        // Calculate the amount to deduct from capital pool
-        const tradeAmount = entryValue + charges.total
-        
-        // Check if there's sufficient balance
-        if (capitalPool.currentAmount >= tradeAmount) {
-          // Create capital transaction for trade investment
-          await tx.capitalTransaction.create({
+        // For options intraday trades, if already exited, only handle P&L
+        if (validatedData.tradeType === 'INTRADAY' && instrument === 'OPTIONS' && netPnl !== null) {
+          // For intraday options that are already closed, only add P&L to capital pool
+          const pnlTransactionType = netPnl >= 0 ? 'PROFIT' : 'LOSS'
+          const pnlAmount = Math.abs(netPnl)
+          
+          // Create P&L transaction
+          await prisma.capitalTransaction.create({
             data: {
               poolId: validatedData.capitalPoolId,
-              transactionType: 'WITHDRAWAL',
-              amount: tradeAmount,
-              description: `Trade investment: ${validatedData.symbol} (${position})`,
+              transactionType: pnlTransactionType,
+              amount: pnlAmount,
+              description: `Options Intraday P&L: ${validatedData.symbol} - ${netPnl >= 0 ? 'Profit' : 'Loss'}`,
               referenceId: createdTrade.id,
               referenceType: 'TRADE',
-              balanceAfter: capitalPool.currentAmount - tradeAmount
+              balanceAfter: capitalPool.currentAmount + netPnl
             }
           })
 
-          // Update capital pool balance
-          await tx.capitalPool.update({
+          // Add P&L to capital pool
+          await prisma.capitalPool.update({
             where: { id: validatedData.capitalPoolId },
             data: {
-              currentAmount: capitalPool.currentAmount - tradeAmount,
-              totalInvested: capitalPool.totalInvested + tradeAmount
+              currentAmount: capitalPool.currentAmount + netPnl,
+              totalPnl: capitalPool.totalPnl + netPnl
             }
           })
-
-          // If trade is closed, handle P&L
-          if (netPnl !== null) {
-            const pnlTransactionType = netPnl >= 0 ? 'PROFIT' : 'LOSS'
-            const pnlAmount = Math.abs(netPnl)
-            
-            // Create P&L transaction
-            await tx.capitalTransaction.create({
+        } else {
+          // For other trades or open positions, handle normal investment logic
+          const investedAmount = entryValue
+          
+          // Check if there's sufficient balance
+          if (capitalPool.currentAmount >= investedAmount) {
+            // Create capital transaction for trade investment
+            await prisma.capitalTransaction.create({
               data: {
                 poolId: validatedData.capitalPoolId,
-                transactionType: pnlTransactionType,
-                amount: pnlAmount,
-                description: `Trade P&L: ${validatedData.symbol} - ${netPnl >= 0 ? 'Profit' : 'Loss'}`,
+                transactionType: 'WITHDRAWAL',
+                amount: investedAmount,
+                description: `Trade investment: ${validatedData.symbol} (${position})`,
                 referenceId: createdTrade.id,
                 referenceType: 'TRADE',
-                balanceAfter: capitalPool.currentAmount - tradeAmount + netPnl
+                balanceAfter: capitalPool.currentAmount - investedAmount
               }
             })
 
-            // Update capital pool with P&L
-            await tx.capitalPool.update({
+            // Update capital pool balance
+            await prisma.capitalPool.update({
               where: { id: validatedData.capitalPoolId },
               data: {
-                currentAmount: capitalPool.currentAmount - tradeAmount + netPnl,
-                totalPnl: capitalPool.totalPnl + netPnl
+                currentAmount: capitalPool.currentAmount - investedAmount,
+                totalInvested: capitalPool.totalInvested + investedAmount
               }
             })
+
+            // If trade is closed, handle P&L and return invested amount
+            if (netPnl !== null) {
+              const pnlTransactionType = netPnl >= 0 ? 'PROFIT' : 'LOSS'
+              const pnlAmount = Math.abs(netPnl)
+              
+              // Create P&L transaction
+              await prisma.capitalTransaction.create({
+                data: {
+                  poolId: validatedData.capitalPoolId,
+                  transactionType: pnlTransactionType,
+                  amount: pnlAmount,
+                  description: `Trade P&L: ${validatedData.symbol} - ${netPnl >= 0 ? 'Profit' : 'Loss'}`,
+                  referenceId: createdTrade.id,
+                  referenceType: 'TRADE',
+                  balanceAfter: capitalPool.currentAmount - investedAmount + netPnl
+                }
+              })
+
+              // Return invested amount back to capital pool and add P&L
+              await prisma.capitalPool.update({
+                where: { id: validatedData.capitalPoolId },
+                data: {
+                  currentAmount: capitalPool.currentAmount - investedAmount + investedAmount + netPnl, // Return invested + P&L
+                  totalInvested: capitalPool.totalInvested - investedAmount, // Remove from invested
+                  totalPnl: capitalPool.totalPnl + netPnl
+                }
+              })
+            }
+          } else {
+            throw new Error(`Insufficient capital pool balance. Required: ₹${investedAmount}, Available: ₹${capitalPool.currentAmount}`)
           }
-        } else {
-          throw new Error(`Insufficient capital pool balance. Required: ₹${tradeAmount}, Available: ₹${capitalPool.currentAmount}`)
         }
       }
     }

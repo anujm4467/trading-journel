@@ -163,15 +163,15 @@ export function PortfolioOverview() {
           </CardHeader>
           <CardContent>
             <div className={`text-3xl font-bold mb-2 ${
-              mockSummary.totalPnl >= 0 ? 'text-green-600' : 'text-red-600'
+              mockSummary.totalPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
             }`}>
               {mockSummary.totalPnl >= 0 ? '+' : ''}{formatCurrency(mockSummary.totalPnl)}
             </div>
             <div className="flex items-center gap-2">
               <span className={`text-sm font-semibold ${
-                mockSummary.totalPnlPercent >= 0 ? 'text-green-600' : 'text-red-600'
+                mockSummary.totalPnlPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
               }`}>
-                {formatPercentage(mockSummary.totalPnlPercent)}
+                {mockSummary.totalPnlPercent >= 0 ? '+' : ''}{formatPercentage(mockSummary.totalPnlPercent)}
               </span>
               {mockSummary.totalPnl >= 0 ? (
                 <span className="text-green-500 text-lg">📈</span>
@@ -206,15 +206,15 @@ export function PortfolioOverview() {
           </CardHeader>
           <CardContent>
             <div className={`text-3xl font-bold mb-2 ${
-              mockSummary.dayChange >= 0 ? 'text-green-600' : 'text-red-600'
+              mockSummary.dayChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
             }`}>
               {mockSummary.dayChange >= 0 ? '+' : ''}{formatCurrency(mockSummary.dayChange)}
             </div>
             <div className="flex items-center gap-2">
               <span className={`text-sm font-semibold ${
-                mockSummary.dayChangePercent >= 0 ? 'text-green-600' : 'text-red-600'
+                mockSummary.dayChangePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
               }`}>
-                {formatPercentage(mockSummary.dayChangePercent)}
+                {mockSummary.dayChangePercent >= 0 ? '+' : ''}{formatPercentage(mockSummary.dayChangePercent)}
               </span>
               {mockSummary.dayChange >= 0 ? (
                 <span className="text-green-500 text-lg">📈</span>
@@ -391,8 +391,8 @@ export function PortfolioOverview() {
                         <TableCell>
                           <span className={`font-bold text-lg ${
                             position.position === 'LONG' || position.position === 'BUY' 
-                              ? 'text-green-600' 
-                              : 'text-red-600'
+                              ? 'text-green-600 dark:text-green-400' 
+                              : 'text-red-600 dark:text-red-400'
                           }`}>
                             {position.position}
                           </span>
@@ -414,7 +414,7 @@ export function PortfolioOverview() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className={`font-bold text-lg ${
-                            position.unrealizedPnl >= 0 ? 'text-green-600' : 'text-red-600'
+                            position.unrealizedPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                           }`}>
                             {position.unrealizedPnl >= 0 ? '+' : ''}{formatCurrency(position.unrealizedPnl)}
                           </div>
@@ -422,9 +422,9 @@ export function PortfolioOverview() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <span className={`text-sm font-bold ${
-                              position.unrealizedPnlPercent >= 0 ? 'text-green-600' : 'text-red-600'
+                              position.unrealizedPnlPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                             }`}>
-                              {formatPercentage(position.unrealizedPnlPercent)}
+                              {position.unrealizedPnlPercent >= 0 ? '+' : ''}{formatPercentage(position.unrealizedPnlPercent)}
                             </span>
                             {position.unrealizedPnlPercent >= 0 ? (
                               <span className="text-green-500">📈</span>

@@ -30,7 +30,11 @@ export async function GET() {
       fnoPnl: fnoPool?.totalPnl || 0,
       totalReturn: totalPool ? (totalPool.totalPnl / totalPool.initialAmount) * 100 : 0,
       equityReturn: equityPool ? (equityPool.totalPnl / equityPool.initialAmount) * 100 : 0,
-      fnoReturn: fnoPool ? (fnoPool.totalPnl / fnoPool.initialAmount) * 100 : 0
+      fnoReturn: fnoPool ? (fnoPool.totalPnl / fnoPool.initialAmount) * 100 : 0,
+      // Add invested amounts from the database
+      totalInvested: totalPool?.totalInvested || 0,
+      equityInvested: equityPool?.totalInvested || 0,
+      fnoInvested: fnoPool?.totalInvested || 0
     }
 
     return NextResponse.json({

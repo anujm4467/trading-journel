@@ -16,9 +16,6 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [selectedInstruments, setSelectedInstruments] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
 
-  const handleAddTrade = () => {
-    // Navigation will be handled by the Link component
-  }
 
   const handleExport = (format: string) => {
     // TODO: Implement export functionality
@@ -73,7 +70,6 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* Header */}
       <div className="relative z-10">
         <AppHeader
-          onAddTrade={handleAddTrade}
           onExport={handleExport}
           onDateRangeChange={handleDateRangeChange}
           onInstrumentFilter={handleInstrumentFilter}
