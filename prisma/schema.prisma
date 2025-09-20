@@ -1,0 +1,335 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Personal Profile (Single User)
+model Profile {
+  id        String   @id @default(cuid())
+  fullName  String?
+  phone     String?
+  timezone  String   @default("Asia/Kolkata")
+  currency  String   @default("INR")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("profiles")
+}
+
+// Core Trading Data
+model Trade {
+  id              String      @id @default(cuid())
+  tradeType       TradeType   @default(ROUND_TRIP)
+  
+  // Entry Information
+  entryDate       DateTime
+  entryPrice      Float
+  quantity        Int
+  position        PositionType
+  symbol          String
+  instrument      InstrumentType
+  
+  // Exit Information
+  exitDate        DateTime?
+  exitPrice       Float?
+  holdingDuration Int? // in minutes
+  
+  // P&L Calculations
+  entryValue      Float
+  exitValue       Float?
+  turnover        Float
+  grossPnl        Float?
+  netPnl          Float?
+  totalCharges    Float?
+  percentageReturn Float?
+  
+  // Risk Management
+  stopLoss        Float?
+  target          Float?
+  riskAmount      Float?
+  rewardAmount    Float?
+  riskRewardRatio Float?
+  
+  // Strategy & Psychology
+  confidenceLevel Int? // 1-10 scale
+  emotionalState  String?
+  marketCondition String?
+  
+  // Brokerage
+  brokerName      String?
+  customBrokerage Boolean @default(false)
+  brokerageType   String? // FLAT_PER_SIDE, PERCENTAGE
+  brokerageValue  Float?
+  
+  // Metadata
+  notes           String?
+  isDraft         Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  charges         TradeCharge[]
+  strategyTags    TradeStrategyTag[]
+  emotionalTags   TradeEmotionalTag[]
+  marketTags      TradeMarketTag[]
+  attachments     TradeAttachment[]
+  optionsTrade    OptionsTrade?
+  
+  @@map("trades")
+}
+
+// Options-specific data
+model OptionsTrade {
+  id          String    @id @default(cuid())
+  tradeId     String    @unique
+  optionType  OptionType
+  strikePrice Float
+  expiryDate  DateTime
+  lotSize     Int       @default(50)
+  underlying  String
+  
+  trade Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  
+  @@map("options_trades")
+}
+
+// Charges breakdown
+model TradeCharge {
+  id          String    @id @default(cuid())
+  tradeId     String
+  chargeType  ChargeType
+  rate        Float
+  baseAmount  Float
+  amount      Float
+  description String?
+  createdAt   DateTime  @default(now())
+  
+  trade Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  
+  @@map("trade_charges")
+}
+
+// Strategy and Emotional Tags
+model StrategyTag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  color       String   @default("#3B82F6")
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  trades TradeStrategyTag[]
+  
+  @@map("strategy_tags")
+}
+
+model EmotionalTag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  color       String   @default("#8B5CF6")
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  trades TradeEmotionalTag[]
+  
+  @@map("emotional_tags")
+}
+
+model MarketTag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  color       String   @default("#10B981")
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  trades TradeMarketTag[]
+  
+  @@map("market_tags")
+}
+
+// Many-to-many relationships
+model TradeStrategyTag {
+  tradeId       String
+  strategyTagId String
+  
+  trade        Trade        @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  strategyTag  StrategyTag  @relation(fields: [strategyTagId], references: [id], onDelete: Cascade)
+  
+  @@id([tradeId, strategyTagId])
+  @@map("trade_strategy_tags")
+}
+
+model TradeEmotionalTag {
+  tradeId        String
+  emotionalTagId String
+  
+  trade         Trade         @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  emotionalTag  EmotionalTag  @relation(fields: [emotionalTagId], references: [id], onDelete: Cascade)
+  
+  @@id([tradeId, emotionalTagId])
+  @@map("trade_emotional_tags")
+}
+
+model TradeMarketTag {
+  tradeId    String
+  marketTagId String
+  
+  trade      Trade     @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  marketTag  MarketTag @relation(fields: [marketTagId], references: [id], onDelete: Cascade)
+  
+  @@id([tradeId, marketTagId])
+  @@map("trade_market_tags")
+}
+
+// Trade Attachments
+model TradeAttachment {
+  id        String   @id @default(cuid())
+  tradeId   String
+  fileName  String
+  filePath  String
+  fileSize  Int
+  fileType  String
+  createdAt DateTime @default(now())
+  
+  trade Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  
+  @@map("trade_attachments")
+}
+
+// Portfolio/Positions
+model Position {
+  id              String   @id @default(cuid())
+  symbol          String
+  instrument      InstrumentType
+  position        PositionType
+  quantity        Int
+  avgEntryPrice   Float
+  currentPrice    Float?
+  unrealizedPnl   Float?
+  unrealizedPnlPercent Float?
+  daysHeld        Int?
+  stopLoss        Float?
+  target          Float?
+  riskAmount      Float?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("positions")
+}
+
+// App Settings (Single User)
+model AppSettings {
+  id                    String   @id @default(cuid())
+  
+  // General Settings
+  defaultInstrument     InstrumentType @default(EQUITY)
+  defaultPosition       PositionType   @default(BUY)
+  defaultLotSize        Json? // { equity: 1, futures: 1, options: 50 }
+  autoCalculateCharges  Boolean        @default(true)
+  requireStrategyTag    Boolean        @default(false)
+  
+  // Display Settings
+  currencySymbol        String         @default("₹")
+  decimalPlaces         Int            @default(2)
+  thousandsSeparator    String         @default("comma")
+  dateFormat            String         @default("DD/MM/YYYY")
+  timeFormat            String         @default("24")
+  theme                 String         @default("light")
+  
+  // Table Settings
+  defaultPageSize       Int            @default(50)
+  denseMode             Boolean        @default(false)
+  zebraStriping         Boolean        @default(true)
+  stickyHeaders         Boolean        @default(true)
+  autoRefresh           Boolean        @default(true)
+  
+  // Export Settings
+  defaultExportFormat   String         @default("excel")
+  includeFilters        Boolean        @default(true)
+  includeCharts         Boolean        @default(true)
+  fileNamingTemplate    String         @default("TradeJournal_YYYY-MM-DD")
+  
+  // Data Retention
+  keepTradeHistory      String         @default("forever")
+  autoBackupFrequency   String         @default("weekly")
+  
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  
+  @@map("app_settings")
+}
+
+// System Configuration
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  category  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("system_config")
+}
+
+// Audit Trail
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String?
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  
+  @@map("audit_logs")
+}
+
+// Enums
+enum TradeType {
+  ENTRY_ONLY
+  ROUND_TRIP
+  MULTI_LEG
+}
+
+enum PositionType {
+  BUY
+  SELL
+  LONG
+  SHORT
+}
+
+enum InstrumentType {
+  EQUITY
+  FUTURES
+  OPTIONS
+}
+
+enum OptionType {
+  CALL
+  PUT
+}
+
+enum ChargeType {
+  BROKERAGE
+  STT
+  EXCHANGE
+  SEBI
+  STAMP_DUTY
+  CUSTOM
+}

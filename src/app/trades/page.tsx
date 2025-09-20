@@ -1,11 +1,11 @@
 import { MainLayout } from '@/components/layout/MainLayout'
-import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
+import { TradesTable } from '@/components/trades/TradesTable'
 
-export default function Home() {
+export default function TradesPage() {
   return (
     <MainLayout>
       <div className="p-6">
-        <DashboardOverview />
+        <TradesTable />
       </div>
     </MainLayout>
   )

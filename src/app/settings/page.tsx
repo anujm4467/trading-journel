@@ -1,11 +1,11 @@
 import { MainLayout } from '@/components/layout/MainLayout'
-import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
+import { SettingsOverview } from '@/components/settings/SettingsOverview'
 
-export default function Home() {
+export default function SettingsPage() {
   return (
     <MainLayout>
       <div className="p-6">
-        <DashboardOverview />
+        <SettingsOverview />
       </div>
     </MainLayout>
   )

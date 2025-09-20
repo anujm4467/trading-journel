@@ -1,11 +1,11 @@
 import { MainLayout } from '@/components/layout/MainLayout'
-import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
+import { PortfolioOverview } from '@/components/portfolio/PortfolioOverview'
 
-export default function Home() {
+export default function PortfolioPage() {
   return (
     <MainLayout>
       <div className="p-6">
-        <DashboardOverview />
+        <PortfolioOverview />
       </div>
     </MainLayout>
   )
