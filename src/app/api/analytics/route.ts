@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const strategy = searchParams.get('strategy')
+    const instrumentType = searchParams.get('instrumentType')
 
     // Build date filter
     const dateFilter: Record<string, Date> = {}
@@ -20,7 +21,16 @@ export async function GET(request: NextRequest) {
       where.entryDate = dateFilter
     }
     if (strategy) {
-      where.strategy = strategy
+      where.strategyTags = {
+        some: {
+          strategyTag: {
+            name: { contains: strategy }
+          }
+        }
+      }
+    }
+    if (instrumentType) {
+      where.instrument = instrumentType
     }
 
     // Get all trades for calculations
@@ -196,8 +206,42 @@ export async function GET(request: NextRequest) {
     const instrumentPerformance = await prisma.trade.groupBy({
       by: ['instrument'],
       where,
-      _count: true
+      _count: true,
+      _sum: {
+        netPnl: true
+      }
     })
+
+    // Calculate instrument performance with win rates
+    const instrumentPerformanceData = await Promise.all(
+      instrumentPerformance.map(async (instrument) => {
+        const instrumentTrades = await prisma.trade.findMany({
+          where: {
+            ...where,
+            instrument: instrument.instrument
+          },
+          include: {
+            charges: true
+          }
+        })
+
+        const instrumentWinningTrades = instrumentTrades.filter(trade => {
+          if (!trade.exitPrice) return false
+          const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
+          const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+          return grossPnl - tradeCharges > 0
+        }).length
+
+        const winRate = instrumentTrades.length > 0 ? (instrumentWinningTrades / instrumentTrades.length) * 100 : 0
+
+        return {
+          instrument: instrument.instrument,
+          trades: instrument._count,
+          pnl: instrument._sum.netPnl || 0,
+          winRate: Math.round(winRate * 100) / 100
+        }
+      })
+    )
 
     return NextResponse.json({
       overview: {
@@ -213,7 +257,7 @@ export async function GET(request: NextRequest) {
         profitFactor: Math.round(profitFactor * 100) / 100
       },
       strategyPerformance: strategyPerformanceData,
-      instrumentPerformance,
+      instrumentPerformance: instrumentPerformanceData,
       dailyPnlData
     })
   } catch (error) {

@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { mockTradingData } from '@/lib/mockData'
 import { formatCurrency } from '@/utils/calculations'
 
 interface TimeAnalysisProps {
@@ -13,16 +12,16 @@ interface TimeAnalysisProps {
 }
 
 export function TimeAnalysis({ data }: TimeAnalysisProps) {
-  const dayData = Object.entries(mockTradingData.timeAnalysis.dayOfWeek).map(([day, pnl]) => ({
+  const dayData = Object.entries(data.dayOfWeek).map(([day, pnl]) => ({
     day,
     pnl,
-    trades: Math.floor(Math.random() * 20) + 10 // Mock trade count
+    trades: Math.floor(Math.random() * 20) + 10 // Mock trade count for now
   }))
 
-  const timeData = Object.entries(mockTradingData.timeAnalysis.timeOfDay).map(([time, pnl]) => ({
+  const timeData = Object.entries(data.timeOfDay).map(([time, pnl]) => ({
     time,
     pnl,
-    trades: Math.floor(Math.random() * 15) + 5 // Mock trade count
+    trades: Math.floor(Math.random() * 15) + 5 // Mock trade count for now
   }))
 
   return (

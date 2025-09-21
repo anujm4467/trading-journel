@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -14,21 +15,67 @@ import {
   DollarSign,
   PieChart,
   Clock,
-  Shield
+  Shield,
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
 import { PerformanceChart } from './PerformanceChart'
 import { WinLossChart } from './WinLossChart'
 import { StrategyPerformance } from './StrategyPerformance'
 import { TimeAnalysis } from './TimeAnalysis'
 import { RiskMetrics } from './RiskMetrics'
-import { mockTradingData } from '@/lib/mockData'
+import { useAnalytics, AnalyticsFilters } from '@/hooks/useAnalytics'
 
 export function AnalyticsDashboard() {
-  // Comment out real API call and use mock data for better visualization
-  // const { data: analytics, loading, error, refetch } = useAnalytics()
-  
-  // Use shared mock data for visualization
-  const data = mockTradingData
+  const [filters, setFilters] = useState<AnalyticsFilters>({
+    instrumentType: 'ALL'
+  })
+
+  const { data, loading, error, refetch } = useAnalytics(filters)
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          Loading analytics data...
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            Error Loading Analytics
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <Button onClick={refetch} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            No Analytics Data Available
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            Start by adding your first trade to see detailed analytics.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -55,16 +102,21 @@ export function AnalyticsDashboard() {
             <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">Net P&L</CardTitle>
             <div className="flex items-center gap-1">
               <TrendingUp className="h-4 w-4 text-green-600" />
-              <ArrowUpRight className="h-3 w-3 text-green-600" />
+              {data.overview.totalNetPnl >= 0 ? (
+                <ArrowUpRight className="h-3 w-3 text-green-600" />
+              ) : (
+                <ArrowDownRight className="h-3 w-3 text-red-600" />
+              )}
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600 mb-1">
-              ₹{data.overview.totalNetPnl.toLocaleString()}
+            <div className={`text-3xl font-bold mb-1 ${data.overview.totalNetPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {data.overview.totalNetPnl >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl).toLocaleString()}
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-green-600 font-medium">+12.8%</span>
-              <span className="text-gray-500 dark:text-gray-400">from last month</span>
+              <span className={`font-medium ${data.overview.totalNetPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {data.overview.winRate.toFixed(1)}% win rate
+              </span>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
               {data.overview.totalTrades} total trades
@@ -82,14 +134,15 @@ export function AnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-600 mb-1">
-              {data.overview.winRate}%
+              {data.overview.winRate.toFixed(1)}%
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-blue-600 font-medium">+2.3%</span>
-              <span className="text-gray-500 dark:text-gray-400">from last month</span>
+              <span className="text-blue-600 font-medium">
+                {data.overview.winningTrades} wins
+              </span>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-              {data.overview.winningTrades} wins, {data.overview.losingTrades} losses
+              {data.overview.losingTrades} losses
             </p>
           </CardContent>
         </Card>
@@ -104,14 +157,15 @@ export function AnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-purple-600 mb-1">
-              {data.overview.profitFactor}
+              {data.overview.profitFactor.toFixed(2)}
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-purple-600 font-medium">Excellent</span>
-              <span className="text-gray-500 dark:text-gray-400">performance</span>
+              <span className="text-purple-600 font-medium">
+                {data.overview.profitFactor >= 2 ? 'Excellent' : data.overview.profitFactor >= 1.5 ? 'Good' : 'Needs Improvement'}
+              </span>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-              Avg win: ₹{data.overview.averageWin.toLocaleString()}
+              Avg win: ₹{Math.round(data.overview.averageWin).toLocaleString()}
             </p>
           </CardContent>
         </Card>
@@ -126,10 +180,15 @@ export function AnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-orange-600 mb-1">
-              ₹{data.overview.totalCharges.toLocaleString()}
+              ₹{Math.round(data.overview.totalCharges).toLocaleString()}
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-orange-600 font-medium">33.7%</span>
+              <span className="text-orange-600 font-medium">
+                {data.overview.totalGrossPnl > 0 ? 
+                  `${((data.overview.totalCharges / data.overview.totalGrossPnl) * 100).toFixed(1)}%` : 
+                  '0%'
+                }
+              </span>
               <span className="text-gray-500 dark:text-gray-400">of gross P&L</span>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
@@ -173,15 +232,24 @@ export function AnalyticsDashboard() {
                   P&L Over Time
                 </CardTitle>
                 <CardDescription>
-                  Your trading performance over the last 12 months
+                  Your trading performance over time
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PerformanceChart data={data.dailyPnlData.map(item => ({
-                  month: new Date(item.date).toLocaleDateString('en-US', { month: 'short' }),
-                  pnl: item.pnl,
-                  trades: Math.floor(Math.random() * 20) + 10 // Mock trade count
-                }))} />
+                {data.monthlyPerformanceData && data.monthlyPerformanceData.length > 0 ? (
+                  <PerformanceChart data={data.monthlyPerformanceData.map(item => ({
+                    month: item.month,
+                    pnl: item.pnl,
+                    trades: item.trades
+                  }))} />
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                    <div className="text-center">
+                      <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No performance data available</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -214,13 +282,13 @@ export function AnalyticsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
-                  +₹{data.overview.averageWin.toLocaleString()}
+                  +₹{Math.round(data.overview.averageWin).toLocaleString()}
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Per winning trade
                 </p>
                 <div className="mt-2 text-xs text-green-600 font-medium">
-                  +15.2% from last month
+                  {data.overview.winningTrades} winning trades
                 </div>
               </CardContent>
             </Card>
@@ -234,13 +302,13 @@ export function AnalyticsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">
-                  -₹{Math.abs(data.overview.averageLoss).toLocaleString()}
+                  -₹{Math.round(Math.abs(data.overview.averageLoss)).toLocaleString()}
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Per losing trade
                 </p>
                 <div className="mt-2 text-xs text-red-600 font-medium">
-                  -8.3% from last month
+                  {data.overview.losingTrades} losing trades
                 </div>
               </CardContent>
             </Card>
@@ -254,13 +322,13 @@ export function AnalyticsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className={`text-3xl font-bold mb-2 ${data.overview.totalGrossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {data.overview.totalGrossPnl >= 0 ? '+' : ''}₹{data.overview.totalGrossPnl.toLocaleString()}
+                  {data.overview.totalGrossPnl >= 0 ? '+' : ''}₹{Math.round(data.overview.totalGrossPnl).toLocaleString()}
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Before charges
                 </p>
                 <div className="mt-2 text-xs text-blue-600 font-medium">
-                  +18.5% from last month
+                  {data.overview.totalTrades} total trades
                 </div>
               </CardContent>
             </Card>
@@ -268,18 +336,18 @@ export function AnalyticsDashboard() {
         </TabsContent>
 
         <TabsContent value="strategies" className="space-y-6">
-          <StrategyPerformance data={data.strategyPerformance} />
+          <StrategyPerformance data={data.strategyPerformance || []} />
         </TabsContent>
 
         <TabsContent value="time" className="space-y-6">
-          <TimeAnalysis data={data.timeAnalysis} />
+          <TimeAnalysis data={data.timeAnalysis || { dayOfWeek: {}, timeOfDay: {} }} />
         </TabsContent>
 
         <TabsContent value="risk" className="space-y-6">
           <RiskMetrics 
-            maxDrawdown={data.riskData.maxDrawdown}
-            sharpeRatio={data.riskData.sharpeRatio}
-            avgRiskReward={data.riskData.avgRiskReward}
+            maxDrawdown={data.riskData?.maxDrawdown || 0}
+            sharpeRatio={data.riskData?.sharpeRatio || 0}
+            avgRiskReward={data.riskData?.avgRiskReward || 0}
             totalCharges={data.overview.totalCharges}
           />
         </TabsContent>
@@ -290,24 +358,26 @@ export function AnalyticsDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-green-600" />
-                  Performance vs Nifty 50
+                  Performance Summary
                 </CardTitle>
                 <CardDescription>
-                  Your trading performance compared to Nifty 50 index
+                  Your trading performance overview
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <span className="font-medium">Your Performance</span>
-                    <span className="text-2xl font-bold text-green-600">+68.5%</span>
+                    <span className="font-medium">Net P&L</span>
+                    <span className={`text-2xl font-bold ${data.overview.totalNetPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {data.overview.totalNetPnl >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl).toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <span className="font-medium">Nifty 50</span>
-                    <span className="text-2xl font-bold text-blue-600">+12.3%</span>
+                    <span className="font-medium">Win Rate</span>
+                    <span className="text-2xl font-bold text-blue-600">{data.overview.winRate.toFixed(1)}%</span>
                   </div>
                   <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                    You&apos;re outperforming the market by <span className="font-bold text-green-600">+56.2%</span>
+                    Based on {data.overview.totalTrades} trades
                   </div>
                 </div>
               </CardContent>
@@ -317,24 +387,24 @@ export function AnalyticsDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-purple-600" />
-                  Risk-Adjusted Returns
+                  Risk Metrics
                 </CardTitle>
                 <CardDescription>
-                  Sharpe ratio comparison with market benchmarks
+                  Key risk and performance indicators
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <span className="font-medium">Your Sharpe Ratio</span>
-                    <span className="text-2xl font-bold text-purple-600">1.67</span>
+                    <span className="font-medium">Profit Factor</span>
+                    <span className="text-2xl font-bold text-purple-600">{data.overview.profitFactor.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
-                    <span className="font-medium">Market Average</span>
-                    <span className="text-2xl font-bold text-gray-600">0.85</span>
+                    <span className="font-medium">Total Charges</span>
+                    <span className="text-2xl font-bold text-gray-600">₹{Math.round(data.overview.totalCharges).toLocaleString()}</span>
                   </div>
                   <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-bold text-purple-600">96%</span> better risk-adjusted returns
+                    {data.overview.profitFactor >= 2 ? 'Excellent' : data.overview.profitFactor >= 1.5 ? 'Good' : 'Needs Improvement'} performance
                   </div>
                 </div>
               </CardContent>
@@ -345,20 +415,37 @@ export function AnalyticsDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-orange-600" />
-                Monthly Performance Comparison
+                Instrument Performance
               </CardTitle>
               <CardDescription>
-                Month-by-month performance vs market indices
+                Performance breakdown by instrument type
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px] flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg">
-                <div className="text-center">
-                  <BarChart3 className="h-16 w-16 text-orange-400 mx-auto mb-4" />
-                  <p className="text-orange-600 font-medium text-lg">Interactive Comparison Chart</p>
-                  <p className="text-orange-500 text-sm">Coming soon with advanced analytics</p>
+              {data.instrumentPerformance && data.instrumentPerformance.length > 0 ? (
+                <div className="space-y-4">
+                  {data.instrumentPerformance.map((instrument, index) => (
+                    <div key={index} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
+                      <span className="font-medium">{instrument.instrument}</span>
+                      <div className="text-right">
+                        <div className={`text-lg font-bold ${instrument.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {instrument.pnl >= 0 ? '+' : ''}₹{Math.round(instrument.pnl).toLocaleString()}
+                        </div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {instrument.trades} trades • {instrument.winRate.toFixed(1)}% win rate
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                  <div className="text-center">
+                    <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No instrument data available</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

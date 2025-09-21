@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/utils/calculations'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts'
 import { TrendingDown, Shield, AlertTriangle, Target, DollarSign, BarChart3 } from 'lucide-react'
-import { mockTradingData } from '@/lib/mockData'
 
 interface RiskMetricsProps {
   maxDrawdown: number
@@ -15,8 +14,8 @@ interface RiskMetricsProps {
   totalCharges: number
 }
 
-// Rich mock data for risk analysis
-const mockRiskData = {
+// Sample data for risk analysis (will be replaced with real data)
+const sampleRiskData = {
   drawdownHistory: [
     { month: 'Jan', drawdown: 0, portfolio: 100000 },
     { month: 'Feb', drawdown: -2500, portfolio: 97500 },
@@ -180,7 +179,7 @@ export function RiskMetrics({
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={mockTradingData.riskData.drawdownHistory}>
+                <LineChart data={sampleRiskData.drawdownHistory}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="month" />
                   <YAxis />
@@ -220,7 +219,7 @@ export function RiskMetrics({
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={mockTradingData.riskData.riskDistribution}
+                    data={sampleRiskData.riskDistribution}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -241,7 +240,7 @@ export function RiskMetrics({
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex justify-center space-x-4 mt-4">
-                    {mockTradingData.riskData.riskDistribution.map((item, index) => (
+                    {sampleRiskData.riskDistribution.map((item, index) => (
                   <div key={index} className="flex items-center space-x-1">
                     <div 
                       className="w-3 h-3 rounded-full" 
@@ -273,7 +272,7 @@ export function RiskMetrics({
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={mockTradingData.riskData.volatilityData}>
+                <LineChart data={sampleRiskData.volatilityData}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="month" />
                   <YAxis yAxisId="left" />
@@ -320,7 +319,7 @@ export function RiskMetrics({
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={mockTradingData.riskData.consecutiveLosses}>
+                <BarChart data={sampleRiskData.consecutiveLosses}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="period" />
                   <YAxis />

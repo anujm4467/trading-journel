@@ -75,10 +75,10 @@ const tradeFormSchema = z.object({
   hasHedgePosition: z.boolean().optional(),
   hedgeOptionType: z.enum(['CALL', 'PUT']).optional(),
   hedgeEntryDate: z.date().optional(),
-  hedgeEntryPrice: z.number().min(0).optional(),
-  hedgeQuantity: z.number().min(0).optional(),
+  hedgeEntryPrice: z.union([z.number().min(0), z.undefined()]).optional(),
+  hedgeQuantity: z.union([z.number().min(0), z.undefined()]).optional(),
   hedgeExitDate: z.date().optional(),
-  hedgeExitPrice: z.number().min(0).optional(),
+  hedgeExitPrice: z.union([z.number().min(0), z.undefined()]).optional(),
   hedgeNotes: z.string().optional(),
 })
 
@@ -568,13 +568,20 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
       const cleanedFormData = {
         ...formData,
         // Set brokerageValue to undefined if customBrokerage is false
-        brokerageValue: formData.customBrokerage ? formData.brokerageValue : undefined
+        brokerageValue: formData.customBrokerage ? formData.brokerageValue : undefined,
+        // Clean hedge fields - convert empty strings and null to undefined
+        hedgeEntryPrice: (formData.hedgeEntryPrice === '' || formData.hedgeEntryPrice === null) ? undefined : formData.hedgeEntryPrice,
+        hedgeQuantity: (formData.hedgeQuantity === '' || formData.hedgeQuantity === null) ? undefined : formData.hedgeQuantity,
+        hedgeExitPrice: (formData.hedgeExitPrice === '' || formData.hedgeExitPrice === null) ? undefined : formData.hedgeExitPrice,
       }
       
       console.log('Cleaned form data:', cleanedFormData)
       
       // Update form with cleaned data
       form.setValue('brokerageValue', cleanedFormData.brokerageValue)
+      form.setValue('hedgeEntryPrice', cleanedFormData.hedgeEntryPrice)
+      form.setValue('hedgeQuantity', cleanedFormData.hedgeQuantity)
+      form.setValue('hedgeExitPrice', cleanedFormData.hedgeExitPrice)
       
       console.log('About to trigger validation...')
       const validData = await form.trigger()
@@ -1303,7 +1310,9 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
                         id="hedgeQuantity"
                         type="number"
                         placeholder="225"
-                        {...form.register('hedgeQuantity', { valueAsNumber: true })}
+                        {...form.register('hedgeQuantity', {
+                          setValueAs: (value) => value === '' ? undefined : Number(value)
+                        })}
                         className="w-full mt-2"
                       />
                     </div>
@@ -1330,7 +1339,9 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
                         type="number"
                         step="0.01"
                         placeholder="2450.50"
-                        {...form.register('hedgeEntryPrice', { valueAsNumber: true })}
+                        {...form.register('hedgeEntryPrice', {
+                          setValueAs: (value) => value === '' ? undefined : Number(value)
+                        })}
                         className="w-full mt-2"
                       />
                     </div>
@@ -1357,7 +1368,9 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
                         type="number"
                         step="0.01"
                         placeholder="2485.75"
-                        {...form.register('hedgeExitPrice', { valueAsNumber: true })}
+                        {...form.register('hedgeExitPrice', {
+                          setValueAs: (value) => value === '' ? undefined : Number(value)
+                        })}
                         className="w-full mt-2"
                       />
                     </div>

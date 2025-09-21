@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,13 +16,100 @@ import {
   LineChart,
   Users,
   Calendar,
-  Clock
+  Clock,
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, BarChart, Bar } from 'recharts'
-import { mockTradingData } from '@/lib/mockData'
+import { useAnalytics, AnalyticsFilters } from '@/hooks/useAnalytics'
+import { DashboardFilters } from './DashboardFilters'
 
 export function DashboardOverview() {
-  const data = mockTradingData
+  const [timeframe, setTimeframe] = useState('30D')
+  const [filters, setFilters] = useState<AnalyticsFilters>({
+    instrumentType: 'ALL'
+  })
+
+  const { data, loading, error, refetch } = useAnalytics(filters)
+
+  // Update date filters based on timeframe
+  useEffect(() => {
+    const now = new Date()
+    let dateFrom: string | undefined
+
+    switch (timeframe) {
+      case 'Today':
+        dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+        break
+      case '7D':
+        dateFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        break
+      case '30D':
+        dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+        break
+      case '90D':
+        dateFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString()
+        break
+    }
+
+    setFilters(prev => ({
+      ...prev,
+      dateFrom,
+      dateTo: now.toISOString()
+    }))
+  }, [timeframe])
+
+  const handleFiltersChange = (newFilters: AnalyticsFilters) => {
+    setFilters(newFilters)
+  }
+
+  const handleTimeframeChange = (newTimeframe: string) => {
+    setTimeframe(newTimeframe)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          Loading dashboard data...
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            Error Loading Data
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <Button onClick={refetch} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            No Data Available
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            Start by adding your first trade to see analytics.
+          </p>
+        </div>
+      </div>
+    )
+  }
   
   return (
     <div className="space-y-8 p-6">
@@ -35,10 +123,18 @@ export function DashboardOverview() {
         </div>
         <div className="flex items-center space-x-2">
           <Badge variant="outline" className="text-sm bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700">
-            Last updated: 2 minutes ago
+            Last updated: {new Date().toLocaleTimeString()}
           </Badge>
         </div>
       </div>
+
+      {/* Filters */}
+      <DashboardFilters
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        onTimeframeChange={handleTimeframeChange}
+        activeTimeframe={timeframe}
+      />
 
       {/* Key Metrics Cards */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -50,7 +146,7 @@ export function DashboardOverview() {
           <CardContent className="pt-0">
             <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{data.overview.totalTrades.toLocaleString()}</div>
             <p className="text-sm text-muted-foreground mt-1">
-              All time trades
+              {timeframe === 'Today' ? 'Today' : `Last ${timeframe.toLowerCase()}`} trades
             </p>
           </CardContent>
         </Card>
@@ -62,7 +158,7 @@ export function DashboardOverview() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className={`text-3xl font-bold ${data.overview.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {data.overview.totalNetPnl >= 0 ? '+' : ''}₹{data.overview.totalNetPnl.toLocaleString()}
+              {data.overview.totalNetPnl >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl).toLocaleString()}
             </div>
             <div className="flex items-center text-sm mt-1">
               {data.overview.totalNetPnl >= 0 ? (
@@ -71,9 +167,9 @@ export function DashboardOverview() {
                 <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" />
               )}
               <span className={`font-medium ${data.overview.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {data.overview.totalNetPnl >= 0 ? '+' : ''}12.8%
+                {data.overview.totalNetPnl >= 0 ? '+' : ''}{data.overview.winRate.toFixed(1)}%
               </span>
-              <span className="text-muted-foreground ml-1">from last month</span>
+              <span className="text-muted-foreground ml-1">win rate</span>
             </div>
           </CardContent>
         </Card>
@@ -84,11 +180,11 @@ export function DashboardOverview() {
             <Target className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{data.overview.winRate}%</div>
+            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{data.overview.winRate.toFixed(1)}%</div>
             <div className="flex items-center text-sm mt-1">
-              <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
-              <span className="text-green-600 dark:text-green-400 font-medium">+2.3%</span>
-              <span className="text-muted-foreground ml-1">from last month</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                {data.overview.winningTrades} wins / {data.overview.losingTrades} losses
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -99,19 +195,19 @@ export function DashboardOverview() {
             <Activity className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent className="pt-0">
-            <div className={`text-3xl font-bold ${Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl / data.overview.totalTrades).toLocaleString()}
+            <div className={`text-3xl font-bold ${data.overview.totalTrades > 0 ? (data.overview.totalNetPnl / data.overview.totalTrades >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') : 'text-gray-600 dark:text-gray-400'}`}>
+              {data.overview.totalTrades > 0 ? (
+                <>
+                  {data.overview.totalNetPnl / data.overview.totalTrades >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl / data.overview.totalTrades).toLocaleString()}
+                </>
+              ) : (
+                '₹0'
+              )}
             </div>
             <div className="flex items-center text-sm mt-1">
-              {Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? (
-                <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
-              ) : (
-                <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" />
-              )}
-              <span className={`font-medium ${Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? '+' : ''}5.2%
+              <span className="text-gray-600 dark:text-gray-400">
+                per trade
               </span>
-              <span className="text-muted-foreground ml-1">from last month</span>
             </div>
           </CardContent>
         </Card>
@@ -127,43 +223,49 @@ export function DashboardOverview() {
               Performance Overview
             </CardTitle>
             <CardDescription className="text-gray-600 dark:text-gray-400">
-              Your trading performance over the last 12 months
+              Your trading performance over the selected period
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsLineChart data={data.monthlyPerformanceData}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <Tooltip 
-                    formatter={(value: number) => [`₹${value.toLocaleString()}`, 'P&L']}
-                    labelStyle={{ color: '#374151', fontSize: '14px' }}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="pnl" 
-                    stroke="#10b981" 
-                    strokeWidth={3}
-                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
-                  />
-                </RechartsLineChart>
-              </ResponsiveContainer>
+              {data.monthlyPerformanceData && data.monthlyPerformanceData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsLineChart data={data.monthlyPerformanceData}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis 
+                      dataKey="month" 
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => [`₹${value.toLocaleString()}`, 'P&L']}
+                      labelStyle={{ color: '#374151', fontSize: '14px' }}
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="pnl" 
+                      stroke="#10b981" 
+                      strokeWidth={3}
+                      dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
+                    />
+                  </RechartsLineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                  No performance data available for the selected period
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -181,27 +283,34 @@ export function DashboardOverview() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-3">
-              {data.recentTrades.map((trade, index) => (
-                <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-gray-50/50 dark:bg-gray-700/50 hover:bg-gray-100/50 dark:hover:bg-gray-600/50 transition-all duration-200 border border-gray-100 dark:border-gray-600">
-                  <div className="flex items-center space-x-3">
-                    <div className={`h-3 w-3 rounded-full ${
-                      trade.type === 'profit' ? 'bg-green-500' : 'bg-red-500'
-                    }`} />
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{trade.symbol}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {trade.time}
-                      </p>
+              {data.recentTrades && data.recentTrades.length > 0 ? (
+                data.recentTrades.map((trade, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-gray-50/50 dark:bg-gray-700/50 hover:bg-gray-100/50 dark:hover:bg-gray-600/50 transition-all duration-200 border border-gray-100 dark:border-gray-600">
+                    <div className="flex items-center space-x-3">
+                      <div className={`h-3 w-3 rounded-full ${
+                        trade.type === 'profit' ? 'bg-green-500' : 'bg-red-500'
+                      }`} />
+                      <div>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{trade.symbol}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {trade.time} • {trade.instrument}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`font-bold text-sm ${
+                      trade.type === 'profit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {trade.type === 'profit' ? '+' : ''}₹{Math.round(trade.pnl).toLocaleString()}
                     </div>
                   </div>
-                  <div className={`font-bold text-sm ${
-                    trade.type === 'profit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                  }`}>
-                    {trade.type === 'profit' ? '+' : ''}₹{trade.pnl.toLocaleString()}
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No recent trades found</p>
                 </div>
-              ))}
+              )}
             </div>
             <Button variant="outline" className="w-full mt-4 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-gray-200 dark:border-gray-600">
               View All Trades
@@ -224,44 +333,55 @@ export function DashboardOverview() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsPieChart>
-                  <Pie
-                    data={data.strategyDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {data.strategyDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value: number, name: string) => [`${value}%`, name]}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px'
-                    }}
-                  />
-                </RechartsPieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="space-y-3 mt-4">
-              {data.strategyDistribution.map((strategy, index) => (
-                <div key={index} className="flex items-center justify-between text-sm p-2 rounded-lg bg-gray-50/50 dark:bg-gray-700/50">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: strategy.color }} />
-                    <span className="font-medium text-gray-900 dark:text-gray-100">{strategy.name}</span>
-                  </div>
-                  <span className="text-gray-600 dark:text-gray-400 font-medium">₹{strategy.pnl.toLocaleString()}</span>
+            {data.strategyDistribution && data.strategyDistribution.length > 0 ? (
+              <>
+                <div className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie
+                        data={data.strategyDistribution}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {data.strategyDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: number, name: string) => [`${value}%`, name]}
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}
+                      />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
-            </div>
+                <div className="space-y-3 mt-4">
+                  {data.strategyDistribution.map((strategy, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm p-2 rounded-lg bg-gray-50/50 dark:bg-gray-700/50">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: strategy.color }} />
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{strategy.name}</span>
+                      </div>
+                      <span className="text-gray-600 dark:text-gray-400 font-medium">₹{Math.round(strategy.pnl).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-[250px] text-gray-500 dark:text-gray-400">
+                <div className="text-center">
+                  <PieChart className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No strategy data available</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -278,33 +398,42 @@ export function DashboardOverview() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.weeklyPerformanceData}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis 
-                    dataKey="day" 
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <Tooltip 
-                    formatter={(value: number) => [`₹${value.toLocaleString()}`, 'P&L']}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Bar 
-                    dataKey="pnl" 
-                    fill="#3b82f6"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {data.weeklyPerformanceData && data.weeklyPerformanceData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.weeklyPerformanceData}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis 
+                      dataKey="day" 
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => [`₹${value.toLocaleString()}`, 'P&L']}
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar 
+                      dataKey="pnl" 
+                      fill="#3b82f6"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                  <div className="text-center">
+                    <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No weekly data available</p>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -324,14 +453,14 @@ export function DashboardOverview() {
             <div className="space-y-4">
               <div className={`text-center p-4 rounded-lg border ${data.overview.totalNetPnl >= 0 ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-100 dark:border-green-800' : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-100 dark:border-red-800'}`}>
                 <div className={`text-2xl font-bold ${data.overview.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {data.overview.totalNetPnl >= 0 ? '+' : ''}₹{data.overview.totalNetPnl.toLocaleString()}
+                  {data.overview.totalNetPnl >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Total P&L</div>
               </div>
               
               <div className="grid grid-cols-2 gap-3">
                 <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600">
-                  <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{data.overview.winRate}%</div>
+                  <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{data.overview.winRate.toFixed(1)}%</div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">Win Rate</div>
                 </div>
                 <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600">
@@ -340,9 +469,15 @@ export function DashboardOverview() {
                 </div>
               </div>
 
-              <div className={`text-center p-3 rounded-lg border ${Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-100 dark:border-green-800' : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-100 dark:border-red-800'}`}>
-                <div className={`text-lg font-bold ${Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {Math.round(data.overview.totalNetPnl / data.overview.totalTrades) >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl / data.overview.totalTrades).toLocaleString()}
+              <div className={`text-center p-3 rounded-lg border ${data.overview.totalTrades > 0 ? (data.overview.totalNetPnl / data.overview.totalTrades >= 0 ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-100 dark:border-green-800' : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-100 dark:border-red-800') : 'bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-600'}`}>
+                <div className={`text-lg font-bold ${data.overview.totalTrades > 0 ? (data.overview.totalNetPnl / data.overview.totalTrades >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') : 'text-gray-600 dark:text-gray-400'}`}>
+                  {data.overview.totalTrades > 0 ? (
+                    <>
+                      {data.overview.totalNetPnl / data.overview.totalTrades >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl / data.overview.totalTrades).toLocaleString()}
+                    </>
+                  ) : (
+                    '₹0'
+                  )}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Avg Trade</div>
               </div>
