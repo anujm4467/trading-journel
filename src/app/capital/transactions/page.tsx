@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useCapital } from '@/hooks/useCapital'
-import { MainLayout } from '@/components/layout/MainLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -189,8 +188,7 @@ export default function CapitalTransactionsPage() {
   }
 
   return (
-    <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -701,6 +699,5 @@ export default function CapitalTransactionsPage() {
         )}
       </AnimatePresence>
       </div>
-    </MainLayout>
   )
 }

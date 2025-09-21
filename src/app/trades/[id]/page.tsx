@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { MainLayout } from '@/components/layout/MainLayout'
 import { TradeDetailsView } from '@/components/trades/TradeDetailsView'
 import { useTrades } from '@/hooks/useTrades'
 import { Button } from '@/components/ui/button'
@@ -154,31 +153,26 @@ export default function TradeDetailsPage() {
 
   if (loading) {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading trade details...</span>
-        </div>
-      </MainLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading trade details...</span>
+      </div>
     )
   }
 
   if (error || !trade) {
     return (
-      <MainLayout>
-        <div className="flex flex-col items-center justify-center h-64 space-y-4">
-          <div className="text-destructive">Error: {error || 'Trade not found'}</div>
-          <Button onClick={() => router.push('/trades')} variant="outline">
-            Back to Trades
-          </Button>
-        </div>
-      </MainLayout>
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <div className="text-destructive">Error: {error || 'Trade not found'}</div>
+        <Button onClick={() => router.push('/trades')} variant="outline">
+          Back to Trades
+        </Button>
+      </div>
     )
   }
 
   return (
-    <MainLayout>
-      <div className="max-w-7xl mx-auto px-6">
+    <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-6 mb-6">
@@ -228,6 +222,5 @@ export default function TradeDetailsPage() {
         {/* Trade Details Content */}
         <TradeDetailsView trade={trade} />
       </div>
-    </MainLayout>
   )
 }

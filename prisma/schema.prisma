@@ -311,6 +311,60 @@ model CapitalTransaction {
   @@map("capital_transactions")
 }
 
+// Stock Symbols Management
+model StockSymbol {
+  id          String   @id @default(cuid())
+  symbol      String   @unique
+  companyName String
+  industry    String?
+  series      String   @default("EQ")
+  isinCode    String?
+  isActive    Boolean  @default(true)
+  source      String   @default("MANUAL") // MANUAL, CSV_IMPORT, API
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("stock_symbols")
+}
+
+// CSV Import Templates and Column Mappings
+model CsvImportTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  headers     Json     // Store original CSV headers as JSON
+  columnMapping Json   // Map CSV columns to database fields
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  imports     CsvImport[]
+  
+  @@map("csv_import_templates")
+}
+
+// CSV Import History
+model CsvImport {
+  id          String   @id @default(cuid())
+  templateId  String?
+  fileName    String
+  originalHeaders Json // Store original CSV headers
+  columnMapping Json   // Store how columns were mapped
+  totalRows   Int
+  processedRows Int
+  successRows Int
+  errorRows   Int
+  duplicateRows Int
+  status      String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  errorMessage String?
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+  
+  template    CsvImportTemplate? @relation(fields: [templateId], references: [id])
+  
+  @@map("csv_imports")
+}
+
 // App Settings (Single User)
 model AppSettings {
   id                    String   @id @default(cuid())

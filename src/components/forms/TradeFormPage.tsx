@@ -30,6 +30,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { SymbolSearchInput } from '@/components/forms/SymbolSearchInput'
 import { TradeFormData, CapitalPool } from '@/types/trade'
 import { TradeDetails } from '@/types/tradeDetails'
 import { calculateCharges, calculateEquityPnL } from '@/utils/calculations'
@@ -992,10 +993,10 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
           {/* Symbol/Ticker */}
           <div className="space-y-2">
             <Label htmlFor="symbol">Symbol/Ticker</Label>
-            <Input
-              id="symbol"
+            <SymbolSearchInput
+              value={form.watch('symbol') || ''}
+              onChange={(value) => form.setValue('symbol', value)}
               placeholder="e.g., RELIANCE, NIFTY50"
-              {...form.register('symbol')}
               className="w-full"
             />
           </div>

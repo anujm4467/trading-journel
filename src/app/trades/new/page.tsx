@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MainLayout } from '@/components/layout/MainLayout'
 import { TradeFormPage } from '@/components/forms/TradeFormPage'
 import { TradeFormData } from '@/types/trade'
 import { tradesApi } from '@/lib/api'
@@ -92,17 +91,15 @@ export default function NewTradePage() {
   }
 
   return (
-    <MainLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-900/20 dark:to-indigo-900/20">
-        <div className="container mx-auto px-4 py-8">
-          <TradeFormPage
-            onSave={handleSave}
-            onSaveDraft={handleSaveDraft}
-            onCancel={handleCancel}
-            isSubmitting={isSubmitting}
-          />
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-900/20 dark:to-indigo-900/20">
+      <div className="container mx-auto px-4 py-8">
+        <TradeFormPage
+          onSave={handleSave}
+          onSaveDraft={handleSaveDraft}
+          onCancel={handleCancel}
+          isSubmitting={isSubmitting}
+        />
       </div>
-    </MainLayout>
+    </div>
   )
 }

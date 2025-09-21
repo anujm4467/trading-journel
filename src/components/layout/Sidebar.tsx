@@ -16,7 +16,8 @@ import {
   FileDown,
   Wallet,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Database
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -36,6 +37,12 @@ const navigationItems = [
     icon: FileText,
     description: 'Complete trade journal',
     badge: 0
+  },
+  {
+    name: 'Stock Management',
+    href: '/stock-management',
+    icon: Database,
+    description: 'Manage stock symbols & CSV imports'
   },
   {
     name: 'Capital',
