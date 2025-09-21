@@ -11,6 +11,8 @@ export default function NewTradePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSave = async (tradeData: TradeFormData) => {
+    if (isSubmitting) return // Prevent duplicate submissions
+    
     setIsSubmitting(true)
     try {
       console.log('Saving trade:', tradeData)
@@ -50,6 +52,9 @@ export default function NewTradePage() {
   }
 
   const handleSaveDraft = async (tradeData: TradeFormData) => {
+    if (isSubmitting) return // Prevent duplicate submissions
+    
+    setIsSubmitting(true)
     try {
       console.log('Saving draft:', tradeData)
       
@@ -83,6 +88,8 @@ export default function NewTradePage() {
     } catch (error) {
       console.error('Error saving draft:', error)
       alert(`Error saving draft: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 

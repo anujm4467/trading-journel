@@ -21,12 +21,12 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(query.limit || '20'), 50) // Max 50 for search results
     const includeInactive = query.includeInactive === 'true'
 
-    // Build where clause for search
+    // Build where clause for search (SQLite doesn't support mode: 'insensitive')
     const where: Record<string, unknown> = {
       OR: [
-        { symbol: { contains: query.q, mode: 'insensitive' } },
-        { companyName: { contains: query.q, mode: 'insensitive' } },
-        { industry: { contains: query.q, mode: 'insensitive' } }
+        { symbol: { contains: query.q } },
+        { companyName: { contains: query.q } },
+        { industry: { contains: query.q } }
       ]
     }
 

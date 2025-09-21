@@ -171,3 +171,113 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// DELETE /api/capital/transactions - Delete a capital transaction
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const transactionId = searchParams.get('id')
+
+    if (!transactionId) {
+      return NextResponse.json(
+        { success: false, error: 'Transaction ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Get the transaction to understand its impact
+    const transaction = await prisma.capitalTransaction.findUnique({
+      where: { id: transactionId },
+      include: { pool: true }
+    })
+
+    if (!transaction) {
+      return NextResponse.json(
+        { success: false, error: 'Transaction not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if transaction is referenced by a trade
+    if (transaction.referenceType === 'TRADE' && transaction.referenceId) {
+      const trade = await prisma.trade.findUnique({
+        where: { id: transaction.referenceId }
+      })
+      
+      if (trade) {
+        return NextResponse.json(
+          { success: false, error: 'Cannot delete transaction linked to an existing trade' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Use transaction to ensure data consistency
+    await prisma.$transaction(async (tx) => {
+      // Delete the transaction
+      await tx.capitalTransaction.delete({
+        where: { id: transactionId }
+      })
+
+      // Recalculate pool balance by getting all remaining transactions
+      const remainingTransactions = await tx.capitalTransaction.findMany({
+        where: { poolId: transaction.poolId },
+        orderBy: { createdAt: 'asc' }
+      })
+
+      // Recalculate the pool balance from scratch
+      let currentBalance = transaction.pool.initialAmount
+      let totalPnl = 0
+      let totalInvested = 0
+      let totalWithdrawn = 0
+
+      for (const txn of remainingTransactions) {
+        switch (txn.transactionType) {
+          case 'DEPOSIT':
+            currentBalance += txn.amount
+            break
+          case 'WITHDRAWAL':
+            currentBalance -= txn.amount
+            totalWithdrawn += txn.amount
+            break
+          case 'PROFIT':
+            currentBalance += txn.amount
+            totalPnl += txn.amount
+            break
+          case 'LOSS':
+            currentBalance -= txn.amount
+            totalPnl -= txn.amount
+            break
+          case 'TRANSFER_IN':
+            currentBalance += txn.amount
+            break
+          case 'TRANSFER_OUT':
+            currentBalance -= txn.amount
+            break
+        }
+      }
+
+      // Update pool with recalculated values
+      await tx.capitalPool.update({
+        where: { id: transaction.poolId },
+        data: {
+          currentAmount: currentBalance,
+          totalPnl,
+          totalInvested,
+          totalWithdrawn
+        }
+      })
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Transaction deleted successfully'
+    })
+  } catch (error) {
+    console.error('Error deleting capital transaction:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete transaction' },
+      { status: 500 }
+    )
+  }
+}

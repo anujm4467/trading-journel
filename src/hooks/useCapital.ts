@@ -16,6 +16,7 @@ interface UseCapitalReturn {
     referenceId?: string
     referenceType?: string
   }) => Promise<boolean>
+  deleteTransaction: (transactionId: string) => Promise<boolean>
   refreshData: () => Promise<void>
 }
 
@@ -163,6 +164,34 @@ export function useCapital(): UseCapitalReturn {
     ])
   }, [fetchCapitalData, fetchTransactions])
 
+  const deleteTransaction = useCallback(async (transactionId: string): Promise<boolean> => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch(`/api/capital/transactions?id=${transactionId}`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // Refresh data to get updated pools and transactions
+        await refreshData()
+        return true
+      } else {
+        setError(result.error || 'Failed to delete transaction')
+        return false
+      }
+    } catch (err) {
+      setError('Network error while deleting transaction')
+      console.error('Error deleting transaction:', err)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [refreshData])
+
   useEffect(() => {
     fetchCapitalData()
     fetchTransactions()
@@ -176,6 +205,7 @@ export function useCapital(): UseCapitalReturn {
     error,
     setupCapital,
     addTransaction,
+    deleteTransaction,
     refreshData
   }
 }

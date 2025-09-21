@@ -35,7 +35,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function CapitalTransactionsPage() {
-  const { pools, allocation, transactions, loading, error, addTransaction, refreshData } = useCapital()
+  const { pools, allocation, transactions, loading, error, addTransaction, deleteTransaction, refreshData } = useCapital()
   const [showAddTransaction, setShowAddTransaction] = useState(false)
   const [showAddCapital, setShowAddCapital] = useState(false)
   const [selectedPool, setSelectedPool] = useState<string>('')
@@ -114,6 +114,15 @@ export default function CapitalTransactionsPage() {
     setIsRefreshing(true)
     await refreshData()
     setTimeout(() => setIsRefreshing(false), 1000)
+  }
+
+  const handleDeleteTransaction = async (transactionId: string) => {
+    if (window.confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
+      const success = await deleteTransaction(transactionId)
+      if (success) {
+        // Transaction deleted successfully, data will be refreshed automatically
+      }
+    }
   }
 
   const formatCurrency = (amount: number) => {
@@ -468,7 +477,12 @@ export default function CapitalTransactionsPage() {
                               <Button variant="ghost" size="sm">
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => handleDeleteTransaction(transaction.id)}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>

@@ -81,8 +81,8 @@ export async function GET(request: NextRequest) {
     
     if (search) {
       where.OR = [
-        { symbol: { contains: search, mode: 'insensitive' } },
-        { notes: { contains: search, mode: 'insensitive' } }
+        { symbol: { contains: search } },
+        { notes: { contains: search } }
       ]
     }
     
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
       where.strategyTags = {
         some: {
           strategyTag: {
-            name: { contains: strategy, mode: 'insensitive' }
+            name: { contains: strategy }
           }
         }
       }
@@ -176,6 +176,35 @@ export async function POST(request: NextRequest) {
     // Map position and instrument fields for compatibility
     const position = validatedData.position || validatedData.side || 'BUY'
     const instrument = validatedData.instrument || validatedData.instrumentType || 'EQUITY'
+
+    // Check for duplicate trades within the last 5 minutes
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+    const duplicateTrade = await prisma.trade.findFirst({
+      where: {
+        symbol: validatedData.symbol,
+        position: position as 'BUY' | 'SELL',
+        instrument: instrument as 'EQUITY' | 'FUTURES' | 'OPTIONS',
+        quantity: validatedData.quantity,
+        entryPrice: validatedData.entryPrice,
+        entryDate: {
+          gte: fiveMinutesAgo
+        },
+        createdAt: {
+          gte: fiveMinutesAgo
+        }
+      }
+    })
+
+    if (duplicateTrade) {
+      return NextResponse.json(
+        { 
+          error: 'Duplicate trade detected', 
+          details: 'A similar trade was created recently. Please wait before creating another identical trade.',
+          duplicateTradeId: duplicateTrade.id
+        },
+        { status: 409 }
+      )
+    }
 
     // Use charges from the form as-is (no recalculation)
     const charges = validatedData.charges || {
@@ -292,10 +321,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create trade with related data and handle capital pool transactions
-    const trade = await prisma.$transaction(async (tx) => {
-      // Create the trade
-      const createdTrade = await tx.trade.create({
+    // Create trade with related data
+    const trade = await prisma.trade.create({
       data: {
         tradeType: validatedData.tradeType || 'INTRADAY',
         symbol: validatedData.symbol,
@@ -451,14 +478,18 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Handle capital pool transactions after the main transaction
+    // Handle capital pool transactions in a separate transaction to prevent race conditions
     if (validatedData.capitalPoolId) {
-      // Get the capital pool
-      const capitalPool = await prisma.capitalPool.findUnique({
-        where: { id: validatedData.capitalPoolId }
-      })
+      await prisma.$transaction(async (tx) => {
+        // Get the capital pool with row-level locking
+        const capitalPool = await tx.capitalPool.findUnique({
+          where: { id: validatedData.capitalPoolId }
+        })
 
-      if (capitalPool) {
+        if (!capitalPool) {
+          throw new Error('Capital pool not found')
+        }
+
         // For options intraday trades, if already exited, only handle P&L
         if (validatedData.tradeType === 'INTRADAY' && instrument === 'OPTIONS' && netPnl !== null) {
           // For intraday options that are already closed, only add P&L to capital pool
@@ -466,20 +497,20 @@ export async function POST(request: NextRequest) {
           const pnlAmount = Math.abs(netPnl)
           
           // Create P&L transaction
-          await prisma.capitalTransaction.create({
+          await tx.capitalTransaction.create({
             data: {
               poolId: validatedData.capitalPoolId,
               transactionType: pnlTransactionType,
               amount: pnlAmount,
               description: `Options Intraday P&L: ${validatedData.symbol} - ${netPnl >= 0 ? 'Profit' : 'Loss'}`,
-              referenceId: createdTrade.id,
+              referenceId: trade.id,
               referenceType: 'TRADE',
               balanceAfter: capitalPool.currentAmount + netPnl
             }
           })
 
           // Add P&L to capital pool
-          await prisma.capitalPool.update({
+          await tx.capitalPool.update({
             where: { id: validatedData.capitalPoolId },
             data: {
               currentAmount: capitalPool.currentAmount + netPnl,
@@ -493,20 +524,20 @@ export async function POST(request: NextRequest) {
           // Check if there's sufficient balance
           if (capitalPool.currentAmount >= investedAmount) {
             // Create capital transaction for trade investment
-            await prisma.capitalTransaction.create({
+            await tx.capitalTransaction.create({
               data: {
                 poolId: validatedData.capitalPoolId,
                 transactionType: 'WITHDRAWAL',
                 amount: investedAmount,
                 description: `Trade investment: ${validatedData.symbol} (${position})`,
-                referenceId: createdTrade.id,
+                referenceId: trade.id,
                 referenceType: 'TRADE',
                 balanceAfter: capitalPool.currentAmount - investedAmount
               }
             })
 
             // Update capital pool balance
-            await prisma.capitalPool.update({
+            await tx.capitalPool.update({
               where: { id: validatedData.capitalPoolId },
               data: {
                 currentAmount: capitalPool.currentAmount - investedAmount,
@@ -520,20 +551,20 @@ export async function POST(request: NextRequest) {
               const pnlAmount = Math.abs(netPnl)
               
               // Create P&L transaction
-              await prisma.capitalTransaction.create({
+              await tx.capitalTransaction.create({
                 data: {
                   poolId: validatedData.capitalPoolId,
                   transactionType: pnlTransactionType,
                   amount: pnlAmount,
                   description: `Trade P&L: ${validatedData.symbol} - ${netPnl >= 0 ? 'Profit' : 'Loss'}`,
-                  referenceId: createdTrade.id,
+                  referenceId: trade.id,
                   referenceType: 'TRADE',
                   balanceAfter: capitalPool.currentAmount - investedAmount + netPnl
                 }
               })
 
               // Return invested amount back to capital pool and add P&L
-              await prisma.capitalPool.update({
+              await tx.capitalPool.update({
                 where: { id: validatedData.capitalPoolId },
                 data: {
                   currentAmount: capitalPool.currentAmount - investedAmount + investedAmount + netPnl, // Return invested + P&L
@@ -546,15 +577,14 @@ export async function POST(request: NextRequest) {
             throw new Error(`Insufficient capital pool balance. Required: ₹${investedAmount}, Available: ₹${capitalPool.currentAmount}`)
           }
         }
-      }
+      })
     }
 
-    return createdTrade
-  })
-
-  return NextResponse.json(trade, { status: 201 })
+    return NextResponse.json(trade, { status: 201 })
   } catch (error) {
     console.error('Error creating trade:', error)
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation error', details: error.issues },
@@ -562,7 +592,7 @@ export async function POST(request: NextRequest) {
       )
     }
     return NextResponse.json(
-      { error: 'Failed to create trade' },
+      { error: 'Failed to create trade', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
