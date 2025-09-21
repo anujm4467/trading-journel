@@ -32,7 +32,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { TradeFormData, CapitalPool } from '@/types/trade'
 import { TradeDetails } from '@/types/tradeDetails'
-import { calculateCharges } from '@/utils/calculations'
+import { calculateCharges, calculateEquityPnL } from '@/utils/calculations'
 import { useCapital } from '@/hooks/useCapital'
 import tradeData from '@/data/tradeData.json'
 
@@ -48,6 +48,7 @@ const tradeFormSchema = z.object({
   capitalPoolId: z.string().optional(),
   exitDate: z.date().optional(),
   exitPrice: z.number().min(0).optional(),
+  ltpPrice: z.number().min(0).optional(), // LTP for equity positions
   stopLoss: z.number().min(0).optional(),
   target: z.number().min(0).optional(),
   confidenceLevel: z.number().min(1).max(10).optional(),
@@ -120,7 +121,25 @@ const steps = [
 
 export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = false, initialData, isEdit = false }: TradeFormPageProps) {
   const [currentStep, setCurrentStep] = useState(1)
-  const [calculations, setCalculations] = useState({
+  const [calculations, setCalculations] = useState<{
+    entryValue: number
+    exitValue: number
+    turnover: number
+    grossPnl: number
+    netPnl: number
+    totalCharges: number
+    percentageReturn: number
+    investedCapital: number
+    charges: {
+      brokerage: number
+      stt: number
+      exchange: number
+      sebi: number
+      stampDuty: number
+      gst: number
+      total: number
+    }
+  }>({
     entryValue: 0,
     exitValue: 0,
     turnover: 0,
@@ -128,6 +147,7 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
     netPnl: 0,
     totalCharges: 0,
     percentageReturn: 0,
+    investedCapital: 0, // For equity positions
     charges: {
       brokerage: 0,
       stt: 0,
@@ -160,6 +180,7 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
     emotionalState: 'Confident',
     planning: '',
     lotSize: 75,
+    ltpPrice: 0, // Default LTP price
   }
 
   const form = useForm<TradeFormSchema>({
@@ -226,6 +247,7 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
         capitalPoolId: getPoolForInstrument(initialData.instrument), // Auto-select based on instrument
         exitDate: initialData.exitDate ? new Date(initialData.exitDate) : undefined,
         exitPrice: initialData.exitPrice || undefined,
+        ltpPrice: initialData.ltpPrice || 0,
         stopLoss: initialData.stopLoss || undefined,
         target: initialData.target || undefined,
         confidenceLevel: initialData.confidenceLevel || 7,
@@ -263,8 +285,20 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
   const entryPrice = form.watch('entryPrice')
   const quantity = form.watch('quantity')
   const exitPrice = form.watch('exitPrice')
+  const ltpPrice = form.watch('ltpPrice')
   const position = form.watch('position')
   const instrument = form.watch('instrument')
+  const tradeType = form.watch('tradeType')
+
+  // Auto-set trade type to POSITIONAL for equity (running trades)
+  useEffect(() => {
+    if (instrument === 'EQUITY' && tradeType !== 'POSITIONAL') {
+      form.setValue('tradeType', 'POSITIONAL')
+      // Clear exit fields for equity running trades
+      form.setValue('exitDate', undefined)
+      form.setValue('exitPrice', undefined)
+    }
+  }, [instrument, tradeType, form])
   
   // Watch hedge position fields
   const hasHedgePosition = form.watch('hasHedgePosition')
@@ -341,10 +375,15 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
       form.setValue('exitDate', today)
     } else if (currentInstrument === 'EQUITY') {
       // Set defaults for equity
-      form.setValue('symbol', '')
-      form.setValue('quantity', 100)
+      form.setValue('symbol', 'HUL')
+      form.setValue('quantity', 98)
       form.setValue('entryPrice', 2450) // Set default entry price
-      form.setValue('tradeType', 'POSITIONAL') // Default to positional for equity
+      form.setValue('ltpPrice', 2400) // Set default LTP price
+      form.setValue('tradeType', 'POSITIONAL') // Always positional for equity (running trades)
+      
+      // Clear exit fields for equity (running trades)
+      form.setValue('exitDate', undefined)
+      form.setValue('exitPrice', undefined)
       
       // Set today's date for entry only
       const today = new Date()
@@ -354,7 +393,43 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
 
   // Calculate real-time values
   useEffect(() => {
-    if (entryPrice && quantity) {
+    if (entryPrice && quantity && entryPrice > 0 && quantity > 0) {
+      // For equity positions, use special calculation with LTP support
+      if (instrument === 'EQUITY' && ltpPrice && ltpPrice > 0) {
+        const equityCalc = calculateEquityPnL(
+          entryPrice,
+          quantity,
+          ltpPrice,
+          exitPrice,
+          position as 'BUY' | 'SELL'
+        )
+        
+        // Calculate invested capital (entry value for equity)
+        const investedCapital = equityCalc.entryValue
+        
+        setCalculations({
+          entryValue: equityCalc.entryValue,
+          exitValue: equityCalc.exitValue,
+          turnover: equityCalc.entryValue + equityCalc.exitValue,
+          grossPnl: equityCalc.grossPnl,
+          netPnl: equityCalc.netPnl,
+          totalCharges: 0, // No charges for equity
+          percentageReturn: equityCalc.percentageReturn,
+          investedCapital: investedCapital,
+          charges: {
+            brokerage: 0,
+            stt: 0,
+            exchange: 0,
+            sebi: 0,
+            stampDuty: 0,
+            gst: 0,
+            total: 0,
+          },
+        })
+        return
+      }
+
+      // For non-equity positions, use standard calculation
       const entryValue = entryPrice * quantity
       const exitValue = exitPrice ? exitPrice * quantity : 0
       const turnover = entryValue + exitValue
@@ -439,6 +514,7 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
         netPnl: finalNetPnl,
         totalCharges: finalTotalCharges,
         percentageReturn,
+        investedCapital: finalEntryValue, // Invested capital is the entry value
         charges: {
           ...finalCharges,
           gst: 0, // GST is typically included in brokerage
@@ -454,6 +530,7 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
         netPnl: 0,
         totalCharges: 0,
         percentageReturn: 0,
+        investedCapital: 0,
         charges: {
           brokerage: 0,
           stt: 0,
@@ -465,7 +542,7 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
         }
       })
     }
-  }, [entryPrice, quantity, exitPrice, position, instrument, hasHedgePosition, hedgeEntryPrice, hedgeExitPrice, hedgeQuantity, hedgeOptionType])
+  }, [entryPrice, quantity, exitPrice, ltpPrice, position, instrument, hasHedgePosition, hedgeEntryPrice, hedgeExitPrice, hedgeQuantity, hedgeOptionType])
 
   const nextStep = () => {
     if (currentStep < steps.length) {
@@ -674,17 +751,29 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-slate-600 dark:text-slate-400">Entry Value:</span>
-                      <span className="font-medium">₹{calculations.entryValue.toLocaleString()}</span>
+                      <span className="font-medium">₹{(calculations.entryValue || 0).toLocaleString()}</span>
                     </div>
+                    {instrument === 'EQUITY' && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">Invested Capital:</span>
+                        <span className="font-medium text-blue-600 dark:text-blue-400">₹{(calculations.investedCapital || 0).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {instrument === 'EQUITY' && ltpPrice && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">Current Value:</span>
+                        <span className="font-medium">₹{((ltpPrice || 0) * (quantity || 0)).toLocaleString()}</span>
+                      </div>
+                    )}
                     {calculations.exitValue > 0 && (
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600 dark:text-slate-400">Exit Value:</span>
-                        <span className="font-medium">₹{calculations.exitValue.toLocaleString()}</span>
+                        <span className="font-medium">₹{(calculations.exitValue || 0).toLocaleString()}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
                       <span className="text-sm text-slate-600 dark:text-slate-400">Turnover:</span>
-                      <span className="font-medium">₹{calculations.turnover.toLocaleString()}</span>
+                      <span className="font-medium">₹{(calculations.turnover || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -692,61 +781,78 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
                 {/* Charges Breakdown */}
                 <div className="space-y-3">
                   <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">Charges Breakdown</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">Brokerage:</span>
-                      <span className="font-medium">₹{calculations.charges.brokerage.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">STT:</span>
-                      <span className="font-medium">₹{calculations.charges.stt.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">Exchange:</span>
-                      <span className="font-medium">₹{calculations.charges.exchange.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">SEBI:</span>
-                      <span className="font-medium">₹{calculations.charges.sebi.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">Stamp Duty:</span>
-                      <span className="font-medium">₹{calculations.charges.stampDuty.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">GST:</span>
-                      <span className="font-medium">₹{calculations.charges.gst.toFixed(2)}</span>
-                    </div>
-                    <div className="border-t pt-2">
-                      <div className="flex justify-between font-semibold">
-                        <span className="text-slate-900 dark:text-slate-100">Total Charges:</span>
-                        <span className="text-slate-900 dark:text-slate-100">₹{calculations.totalCharges.toFixed(2)}</span>
+                  {instrument === 'EQUITY' ? (
+                    <div className="text-center py-4">
+                      <div className="text-sm text-green-600 dark:text-green-400 font-medium">
+                        No charges for equity positions
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Equity trades have zero brokerage and charges
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">Brokerage:</span>
+                        <span className="font-medium">₹{calculations.charges.brokerage.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">STT:</span>
+                        <span className="font-medium">₹{calculations.charges.stt.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">Exchange:</span>
+                        <span className="font-medium">₹{calculations.charges.exchange.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">SEBI:</span>
+                        <span className="font-medium">₹{calculations.charges.sebi.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">Stamp Duty:</span>
+                        <span className="font-medium">₹{calculations.charges.stampDuty.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">GST:</span>
+                        <span className="font-medium">₹{calculations.charges.gst.toFixed(2)}</span>
+                      </div>
+                      <div className="border-t pt-2">
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-slate-900 dark:text-slate-100">Total Charges:</span>
+                          <span className="text-slate-900 dark:text-slate-100">₹{calculations.totalCharges.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* P&L Summary */}
-                {calculations.exitValue > 0 && (
+                {(calculations.exitValue > 0 || (instrument === 'EQUITY' && ltpPrice && ltpPrice > 0)) && (
                   <div className="space-y-3">
                     <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">P&L Summary</h4>
                     <div className="space-y-2">
+                      {instrument === 'EQUITY' && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-slate-600 dark:text-slate-400">Invested Capital:</span>
+                          <span className="font-medium text-blue-600 dark:text-blue-400">₹{(calculations.investedCapital || 0).toLocaleString()}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600 dark:text-slate-400">Gross P&L:</span>
-                        <span className={`font-medium ${calculations.grossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {calculations.grossPnl >= 0 ? '+' : ''}₹{calculations.grossPnl.toFixed(2)}
+                        <span className={`font-medium ${(calculations.grossPnl || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {(calculations.grossPnl || 0) >= 0 ? '+' : ''}₹{(calculations.grossPnl || 0).toFixed(2)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600 dark:text-slate-400">Net P&L:</span>
-                        <span className={`font-semibold ${calculations.netPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {calculations.netPnl >= 0 ? '+' : ''}₹{calculations.netPnl.toFixed(2)}
+                        <span className={`font-semibold ${(calculations.netPnl || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {(calculations.netPnl || 0) >= 0 ? '+' : ''}₹{(calculations.netPnl || 0).toFixed(2)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600 dark:text-slate-400">Return %:</span>
-                        <span className={`font-semibold ${calculations.percentageReturn >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {calculations.percentageReturn >= 0 ? '+' : ''}{calculations.percentageReturn.toFixed(2)}%
+                        <span className={`font-semibold ${(calculations.percentageReturn || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {(calculations.percentageReturn || 0) >= 0 ? '+' : ''}{(calculations.percentageReturn || 0).toFixed(2)}%
                         </span>
                       </div>
                     </div>
@@ -829,26 +935,40 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
           {/* Trade Type */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">Trade Type</Label>
-            <RadioGroup
-              value={form.watch('tradeType')}
-              onValueChange={(value) => form.setValue('tradeType', value as 'INTRADAY' | 'POSITIONAL')}
-              className="flex gap-6"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="INTRADAY" id="intraday" />
-                <Label htmlFor="intraday" className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-blue-600" />
-                  Intraday (Same Day)
-                </Label>
+            {form.watch('instrument') === 'EQUITY' ? (
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Positional (Running Trade)
+                  </span>
+                </div>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  Equity positions are always running trades (positional)
+                </p>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="POSITIONAL" id="positional" />
-                <Label htmlFor="positional" className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-green-600" />
-                  Positional (Multi-day)
-                </Label>
-              </div>
-            </RadioGroup>
+            ) : (
+              <RadioGroup
+                value={form.watch('tradeType')}
+                onValueChange={(value) => form.setValue('tradeType', value as 'INTRADAY' | 'POSITIONAL')}
+                className="flex gap-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="INTRADAY" id="intraday" />
+                  <Label htmlFor="intraday" className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-blue-600" />
+                    Intraday (Same Day)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="POSITIONAL" id="positional" />
+                  <Label htmlFor="positional" className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-green-600" />
+                    Positional (Multi-day)
+                  </Label>
+                </div>
+              </RadioGroup>
+            )}
           </div>
 
           {/* Entry Date & Time */}
@@ -1056,8 +1176,26 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
             />
           </div>
 
-          {/* Exit Date & Time - Only for Intraday trades */}
-          {form.watch('tradeType') === 'INTRADAY' && (
+          {/* LTP Price - Only for Equity */}
+          {form.watch('instrument') === 'EQUITY' && (
+            <div className="space-y-2">
+              <Label htmlFor="ltpPrice">LTP (Last Traded Price) (₹)</Label>
+              <Input
+                id="ltpPrice"
+                type="number"
+                step="0.01"
+                placeholder="210.00"
+                {...form.register('ltpPrice', { valueAsNumber: true })}
+                className="w-full"
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Current market price for unrealized P&L calculation
+              </p>
+            </div>
+          )}
+
+          {/* Exit Date & Time - Only for Intraday trades (not for equity running trades) */}
+          {form.watch('tradeType') === 'INTRADAY' && form.watch('instrument') !== 'EQUITY' && (
             <div className="space-y-2">
               <Label htmlFor="exitDate">Exit Date & Time</Label>
               <Input
@@ -1076,8 +1214,8 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
             </div>
           )}
 
-          {/* Exit Price - Only for Intraday trades */}
-          {form.watch('tradeType') === 'INTRADAY' && (
+          {/* Exit Price - Only for Intraday trades (not for equity running trades) */}
+          {form.watch('tradeType') === 'INTRADAY' && form.watch('instrument') !== 'EQUITY' && (
             <div className="space-y-2">
               <Label htmlFor="exitPrice">Exit Price (₹)</Label>
               <Input
@@ -1088,6 +1226,22 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
                 {...form.register('exitPrice', { valueAsNumber: true })}
                 className="w-full"
               />
+            </div>
+          )}
+
+          {/* Running Trade Info for Equity */}
+          {form.watch('instrument') === 'EQUITY' && (
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-medium text-green-900 dark:text-green-100">
+                  Running Trade
+                </span>
+              </div>
+              <p className="text-xs text-green-700 dark:text-green-300">
+                This is a running equity position. P&L is calculated using LTP (Last Traded Price). 
+                Exit details will be added when the position is closed.
+              </p>
             </div>
           )}
 
@@ -1402,6 +1556,7 @@ function ReviewStep({ form, calculations }: {
     netPnl: number
     totalCharges: number
     percentageReturn: number
+    investedCapital: number
     charges: {
       brokerage: number
       stt: number
@@ -1610,40 +1765,46 @@ function ReviewStep({ form, calculations }: {
             <div className="space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                 <span className="text-slate-600 dark:text-slate-400 font-medium">Entry Value</span>
-                <span className="font-bold text-slate-900 dark:text-slate-100">₹{calculations.entryValue.toLocaleString()}</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">₹{(calculations.entryValue || 0).toLocaleString()}</span>
               </div>
+              {formData.instrument === 'EQUITY' && (
+                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">Invested Capital</span>
+                  <span className="font-bold text-blue-600 dark:text-blue-400">₹{(calculations.investedCapital || 0).toLocaleString()}</span>
+                </div>
+              )}
               {calculations.exitValue > 0 && (
                 <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                   <span className="text-slate-600 dark:text-slate-400 font-medium">Exit Value</span>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">₹{calculations.exitValue.toLocaleString()}</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">₹{(calculations.exitValue || 0).toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                 <span className="text-slate-600 dark:text-slate-400 font-medium">Turnover</span>
-                <span className="font-bold text-slate-900 dark:text-slate-100">₹{calculations.turnover.toLocaleString()}</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">₹{(calculations.turnover || 0).toLocaleString()}</span>
               </div>
             </div>
             <div className="space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                 <span className="text-slate-600 dark:text-slate-400 font-medium">Total Charges</span>
-                <span className="font-bold text-slate-900 dark:text-slate-100">₹{calculations.totalCharges.toFixed(2)}</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">₹{(calculations.totalCharges || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                 <span className="text-slate-600 dark:text-slate-400 font-medium">Gross P&L</span>
-                <span className={`font-bold text-lg ${calculations.grossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {calculations.grossPnl >= 0 ? '+' : ''}₹{calculations.grossPnl.toFixed(2)}
+                <span className={`font-bold text-lg ${(calculations.grossPnl || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {(calculations.grossPnl || 0) >= 0 ? '+' : ''}₹{(calculations.grossPnl || 0).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                 <span className="text-slate-600 dark:text-slate-400 font-medium">Net P&L</span>
-                <span className={`font-bold text-xl ${calculations.netPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {calculations.netPnl >= 0 ? '+' : ''}₹{calculations.netPnl.toFixed(2)}
+                <span className={`font-bold text-xl ${(calculations.netPnl || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {(calculations.netPnl || 0) >= 0 ? '+' : ''}₹{(calculations.netPnl || 0).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-slate-600 dark:text-slate-400 font-medium">Return %</span>
-                <span className={`font-bold text-xl ${calculations.percentageReturn >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {calculations.percentageReturn >= 0 ? '+' : ''}{calculations.percentageReturn.toFixed(2)}%
+                <span className={`font-bold text-xl ${(calculations.percentageReturn || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {(calculations.percentageReturn || 0) >= 0 ? '+' : ''}{(calculations.percentageReturn || 0).toFixed(2)}%
                 </span>
               </div>
             </div>

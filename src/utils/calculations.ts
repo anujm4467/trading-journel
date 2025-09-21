@@ -27,6 +27,18 @@ export function calculateCharges(
   position: PositionType,
   customRates?: Partial<ChargeRates>
 ): ChargeCalculation {
+  // For equity positions, no charges are applied
+  if (instrument === 'EQUITY') {
+    return {
+      brokerage: 0,
+      stt: 0,
+      exchange: 0,
+      sebi: 0,
+      stampDuty: 0,
+      total: 0
+    }
+  }
+
   const rates = { ...DEFAULT_CHARGE_RATES, ...customRates }
   const turnover = entryValue + exitValue
   const sellValue = position === 'SELL' ? exitValue : entryValue
@@ -40,9 +52,6 @@ export function calculateCharges(
   let stt = 0
   if (position === 'SELL') {
     switch (instrument) {
-      case 'EQUITY':
-        stt = sellValue * rates.stt.equity
-        break
       case 'FUTURES':
         stt = sellValue * rates.stt.futures
         break
@@ -101,6 +110,56 @@ export function calculatePnL(
     grossPnl: Math.round(grossPnl * 100) / 100,
     netPnl: Math.round(netPnl * 100) / 100,
     percentageReturn: Math.round(percentageReturn * 100) / 100
+  }
+}
+
+/**
+ * Calculate P&L for equity positions with LTP support
+ */
+export function calculateEquityPnL(
+  entryPrice: number,
+  quantity: number,
+  ltpPrice: number,
+  exitPrice?: number,
+  position: PositionType = 'BUY'
+): {
+  entryValue: number
+  currentValue: number
+  exitValue: number
+  grossPnl: number
+  netPnl: number
+  percentageReturn: number
+  isRealized: boolean
+} {
+  const entryValue = entryPrice * quantity
+  const currentValue = ltpPrice * quantity
+  const exitValue = exitPrice ? exitPrice * quantity : 0
+  
+  // Use exit price if available (realized), otherwise use LTP (unrealized)
+  const valueForCalculation = exitPrice || ltpPrice
+  const calculationValue = valueForCalculation * quantity
+  const isRealized = !!exitPrice
+
+  // Gross P&L calculation based on position
+  let grossPnl: number
+  if (position === 'BUY') {
+    grossPnl = calculationValue - entryValue
+  } else {
+    grossPnl = entryValue - calculationValue
+  }
+
+  // For equity, no charges are applied
+  const netPnl = grossPnl
+  const percentageReturn = (netPnl / entryValue) * 100
+
+  return {
+    entryValue: Math.round(entryValue * 100) / 100,
+    currentValue: Math.round(currentValue * 100) / 100,
+    exitValue: Math.round(exitValue * 100) / 100,
+    grossPnl: Math.round(grossPnl * 100) / 100,
+    netPnl: Math.round(netPnl * 100) / 100,
+    percentageReturn: Math.round(percentageReturn * 100) / 100,
+    isRealized
   }
 }
 

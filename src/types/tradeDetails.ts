@@ -12,6 +12,7 @@ export interface TradeDetails {
   // Price Information
   entryPrice: number
   exitPrice?: number
+  ltpPrice?: number // Last Traded Price for equity positions
   entryValue: number
   exitValue?: number
   turnover: number
@@ -21,6 +22,7 @@ export interface TradeDetails {
   netPnl?: number
   totalCharges?: number
   percentageReturn?: number
+  investedCapital?: number // For equity positions
   
   // Date Information
   entryDate: string
@@ -168,6 +170,7 @@ export interface TradeFormData {
   quantity: number
   entryPrice: number
   exitPrice?: number
+  ltpPrice?: number // Last Traded Price for equity positions
   entryDate: Date
   exitDate?: Date
   
@@ -235,6 +238,7 @@ export interface TradeCalculations {
   netPnl: number
   totalCharges: number
   percentageReturn: number
+  investedCapital: number // For equity positions
   charges: {
     brokerage: number
     stt: number
