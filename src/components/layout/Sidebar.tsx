@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   FileText,
   BarChart3,
-  Briefcase,
   Settings,
   FileDown,
   Wallet,
@@ -55,12 +54,6 @@ const navigationItems = [
     href: '/analytics',
     icon: BarChart3,
     description: 'Performance analysis'
-  },
-  {
-    name: 'Portfolio',
-    href: '/portfolio',
-    icon: Briefcase,
-    description: 'Current positions'
   },
   {
     name: 'Settings',

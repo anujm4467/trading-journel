@@ -569,10 +569,10 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
         ...formData,
         // Set brokerageValue to undefined if customBrokerage is false
         brokerageValue: formData.customBrokerage ? formData.brokerageValue : undefined,
-        // Clean hedge fields - convert empty strings and null to undefined
-        hedgeEntryPrice: (formData.hedgeEntryPrice === '' || formData.hedgeEntryPrice === null) ? undefined : formData.hedgeEntryPrice,
-        hedgeQuantity: (formData.hedgeQuantity === '' || formData.hedgeQuantity === null) ? undefined : formData.hedgeQuantity,
-        hedgeExitPrice: (formData.hedgeExitPrice === '' || formData.hedgeExitPrice === null) ? undefined : formData.hedgeExitPrice,
+        // Clean hedge fields - convert null to undefined
+        hedgeEntryPrice: formData.hedgeEntryPrice === null ? undefined : formData.hedgeEntryPrice,
+        hedgeQuantity: formData.hedgeQuantity === null ? undefined : formData.hedgeQuantity,
+        hedgeExitPrice: formData.hedgeExitPrice === null ? undefined : formData.hedgeExitPrice,
       }
       
       console.log('Cleaned form data:', cleanedFormData)

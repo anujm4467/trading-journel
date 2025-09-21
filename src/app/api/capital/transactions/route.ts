@@ -228,7 +228,7 @@ export async function DELETE(request: NextRequest) {
       // Recalculate the pool balance from scratch
       let currentBalance = transaction.pool.initialAmount
       let totalPnl = 0
-      let totalInvested = 0
+      const totalInvested = 0
       let totalWithdrawn = 0
 
       for (const txn of remainingTransactions) {

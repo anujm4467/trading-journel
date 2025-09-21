@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,7 @@ import { RiskMetrics } from './RiskMetrics'
 import { useAnalytics, AnalyticsFilters } from '@/hooks/useAnalytics'
 
 export function AnalyticsDashboard() {
-  const [filters, setFilters] = useState<AnalyticsFilters>({
+  const [filters] = useState<AnalyticsFilters>({
     instrumentType: 'ALL'
   })
 
@@ -349,6 +349,8 @@ export function AnalyticsDashboard() {
             sharpeRatio={data.riskData?.sharpeRatio || 0}
             avgRiskReward={data.riskData?.avgRiskReward || 0}
             totalCharges={data.overview.totalCharges}
+            dailyPnlData={data.dailyPnlData}
+            totalTrades={data.overview.totalTrades}
           />
         </TabsContent>
 

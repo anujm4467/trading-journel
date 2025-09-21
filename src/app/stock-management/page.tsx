@@ -445,7 +445,7 @@ export default function StockManagementPage() {
                     Upload New CSV File
                   </h3>
                   <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
-                    Upload a CSV file to import stock symbols. Switch to the "Stock Symbols" tab to use the upload interface.
+                    Upload a CSV file to import stock symbols. Switch to the &quot;Stock Symbols&quot; tab to use the upload interface.
                   </p>
                   <Button 
                     onClick={() => fileInputRef.current?.click()}

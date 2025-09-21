@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ApiResponse } from '@/lib/api'
 
 export interface AnalyticsFilters {
   dateFrom?: string
@@ -61,6 +60,15 @@ export interface AnalyticsData {
     pnl: number
     color: string
   }>
+  timeAnalysis: {
+    dayOfWeek: Record<string, number>
+    timeOfDay: Record<string, number>
+  }
+  riskData?: {
+    maxDrawdown: number
+    sharpeRatio: number
+    avgRiskReward: number
+  }
 }
 
 export interface UseAnalyticsReturn {
@@ -113,7 +121,13 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
         monthlyPerformanceData: generateMonthlyData(analyticsData.dailyPnlData || []),
         weeklyPerformanceData: generateWeeklyData(analyticsData.dailyPnlData || []),
         recentTrades: await getRecentTrades(filters),
-        strategyDistribution: generateStrategyDistribution(analyticsData.strategyPerformance || [])
+        strategyDistribution: generateStrategyDistribution(analyticsData.strategyPerformance || []),
+        timeAnalysis: generateTimeAnalysis(analyticsData.dailyPnlData || []),
+        riskData: {
+          maxDrawdown: analyticsData.riskData?.maxDrawdown || 0,
+          sharpeRatio: analyticsData.riskData?.sharpeRatio || 0,
+          avgRiskReward: analyticsData.riskData?.avgRiskReward || 0
+        }
       }
 
       setData(transformedData)
@@ -171,7 +185,7 @@ async function getRecentTrades(filters: AnalyticsFilters): Promise<Array<{
       return []
     }
 
-    return data.trades.map((trade: any) => ({
+    return data.trades.map((trade: { symbol: string; netPnl: number; entryDate: string; instrument: string }) => ({
       symbol: trade.symbol,
       pnl: trade.netPnl || 0,
       type: (trade.netPnl || 0) >= 0 ? 'profit' : 'loss',
@@ -259,6 +273,33 @@ function generateStrategyDistribution(strategyPerformance: Array<{
     pnl: strategy.pnl,
     color: colors[index % colors.length]
   }))
+}
+
+// Helper function to generate time analysis data
+function generateTimeAnalysis(dailyData: Array<{ date: string; pnl: number }>): {
+  dayOfWeek: Record<string, number>
+  timeOfDay: Record<string, number>
+} {
+  const dayOfWeek: Record<string, number> = {}
+  const timeOfDay: Record<string, number> = {}
+  
+  dailyData.forEach(day => {
+    const date = new Date(day.date)
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' })
+    const hour = date.getHours()
+    
+    // Group by day of week
+    dayOfWeek[dayName] = (dayOfWeek[dayName] || 0) + day.pnl
+    
+    // Group by time of day (simplified to morning/afternoon/evening)
+    let timeSlot = 'Morning'
+    if (hour >= 12 && hour < 17) timeSlot = 'Afternoon'
+    else if (hour >= 17) timeSlot = 'Evening'
+    
+    timeOfDay[timeSlot] = (timeOfDay[timeSlot] || 0) + day.pnl
+  })
+  
+  return { dayOfWeek, timeOfDay }
 }
 
 // Helper function to get time ago string

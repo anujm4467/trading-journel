@@ -487,7 +487,7 @@ export function DashboardOverview() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2">
         <Card className="group cursor-pointer backdrop-blur-sm bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200/50 dark:border-blue-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg flex items-center gap-2 text-blue-700 dark:text-blue-300">
@@ -524,23 +524,6 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card className="group cursor-pointer backdrop-blur-sm bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200/50 dark:border-purple-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg flex items-center gap-2 text-purple-700 dark:text-purple-300">
-              <Activity className="h-5 w-5" />
-              Portfolio Status
-            </CardTitle>
-            <CardDescription className="text-purple-600 dark:text-purple-400">
-              Check your current positions
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <Button variant="outline" className="w-full border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-300 dark:hover:bg-purple-900/20 shadow-lg hover:shadow-xl transition-all duration-200">
-              <Activity className="h-4 w-4 mr-2" />
-              View Portfolio
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

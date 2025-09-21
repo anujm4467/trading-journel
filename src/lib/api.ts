@@ -146,13 +146,6 @@ export const analyticsApi = {
   }
 }
 
-// Portfolio API
-export const portfolioApi = {
-  // Get portfolio data
-  async getPortfolio() {
-    return apiCall<Record<string, unknown>>('/api/portfolio')
-  }
-}
 
 // Settings API
 export const settingsApi = {

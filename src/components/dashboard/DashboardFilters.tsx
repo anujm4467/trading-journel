@@ -45,7 +45,7 @@ export function DashboardFilters({
   const handleStrategyChange = (value: string) => {
     onFiltersChange({
       ...filters,
-      strategy: value || undefined
+      strategy: value === 'all' ? undefined : value
     })
   }
 
@@ -176,14 +176,14 @@ export function DashboardFilters({
                 Strategy
               </label>
               <Select
-                value={filters.strategy || ''}
+                value={filters.strategy || 'all'}
                 onValueChange={handleStrategyChange}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select strategy" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Strategies</SelectItem>
+                  <SelectItem value="all">All Strategies</SelectItem>
                   <SelectItem value="Support & Resistance">Support & Resistance</SelectItem>
                   <SelectItem value="Intraday Hunter">Intraday Hunter</SelectItem>
                   <SelectItem value="Breakout">Breakout</SelectItem>
