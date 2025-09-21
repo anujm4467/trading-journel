@@ -125,6 +125,16 @@ export async function PUT(
           customBrokerage: body.customBrokerage,
           brokerageType: body.brokerageType,
           brokerageValue: body.brokerageValue,
+          // Psychology & Behavioral Analysis (Optional)
+          followedRiskReward: body.followedRiskReward,
+          followedIntradayHunter: body.followedIntradayHunter,
+          overtrading: body.overtrading,
+          waitedForRetracement: body.waitedForRetracement,
+          hadPatienceWhileExiting: body.hadPatienceWhileExiting,
+          showedGreed: body.showedGreed,
+          showedFear: body.showedFear,
+          tradedAgainstTrend: body.tradedAgainstTrend,
+          psychologyNotes: body.psychologyNotes,
           // Update charges if provided
           ...(body.charges && {
             charges: {

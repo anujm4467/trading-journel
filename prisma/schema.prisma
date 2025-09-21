@@ -63,6 +63,17 @@ model Trade {
   marketCondition String?
   planning        String? // Pre-trade planning notes
   
+  // Psychology & Behavioral Analysis (Optional)
+  followedRiskReward      Boolean? // Did you follow your planned risk-reward ratio
+  followedIntradayHunter  Boolean? // Did you follow your intraday hunter strategy
+  overtrading             Boolean? // Did you overtrade on this day
+  waitedForRetracement    Boolean? // Did you wait for proper retracement
+  hadPatienceWhileExiting Boolean? // Were you patient while exiting the trade
+  showedGreed             Boolean? // Did you show greed in this trade
+  showedFear              Boolean? // Did you show fear in this trade
+  tradedAgainstTrend      Boolean? // Did you trade against the market trend
+  psychologyNotes         String? // Additional psychology notes
+  
   // Brokerage
   brokerName      String?
   customBrokerage Boolean @default(false)

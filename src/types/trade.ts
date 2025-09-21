@@ -32,6 +32,17 @@ export interface Trade {
   emotionalState?: string | null
   marketCondition?: string | null
   planning?: string | null // Pre-trade planning notes
+  
+  // Psychology & Behavioral Analysis (Optional)
+  followedRiskReward?: boolean | null
+  followedIntradayHunter?: boolean | null
+  overtrading?: boolean | null
+  waitedForRetracement?: boolean | null
+  hadPatienceWhileExiting?: boolean | null
+  showedGreed?: boolean | null
+  showedFear?: boolean | null
+  tradedAgainstTrend?: boolean | null
+  psychologyNotes?: string | null
   brokerName?: string | null
   customBrokerage?: boolean
   brokerageType?: string | null
@@ -261,6 +272,17 @@ export interface TradeFormData {
   hedgeExitDate?: Date
   hedgeExitPrice?: number
   hedgeNotes?: string
+  
+  // Psychology & Behavioral Analysis (Optional)
+  followedRiskReward?: boolean
+  followedIntradayHunter?: boolean
+  overtrading?: boolean
+  waitedForRetracement?: boolean
+  hadPatienceWhileExiting?: boolean
+  showedGreed?: boolean
+  showedFear?: boolean
+  tradedAgainstTrend?: boolean
+  psychologyNotes?: string
 }
 
 // Filter Types

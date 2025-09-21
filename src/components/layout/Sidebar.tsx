@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   FileText,
   BarChart3,
+  Brain,
   Settings,
   FileDown,
   Wallet,
@@ -54,6 +55,12 @@ const navigationItems = [
     href: '/analytics',
     icon: BarChart3,
     description: 'Performance analysis'
+  },
+  {
+    name: 'Psychology',
+    href: '/psychology',
+    icon: Brain,
+    description: 'Trading psychology analysis'
   },
   {
     name: 'Settings',

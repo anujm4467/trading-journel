@@ -47,6 +47,17 @@ const tradeSchema = z.object({
   hedgeQuantity: z.number().optional(),
   hedgeExitDate: z.string().datetime().optional(),
   hedgeExitPrice: z.number().optional(),
+  hedgeNotes: z.string().optional(),
+  // Psychology & Behavioral Analysis (Optional)
+  followedRiskReward: z.boolean().optional(),
+  followedIntradayHunter: z.boolean().optional(),
+  overtrading: z.boolean().optional(),
+  waitedForRetracement: z.boolean().optional(),
+  hadPatienceWhileExiting: z.boolean().optional(),
+  showedGreed: z.boolean().optional(),
+  showedFear: z.boolean().optional(),
+  tradedAgainstTrend: z.boolean().optional(),
+  psychologyNotes: z.string().optional(),
   charges: z.object({
     brokerage: z.number().min(0),
     stt: z.number().min(0),
@@ -352,6 +363,16 @@ export async function POST(request: NextRequest) {
         brokerageType: validatedData.brokerageType,
         brokerageValue: validatedData.brokerageValue,
         isDraft: validatedData.isDraft || false,
+        // Psychology & Behavioral Analysis (Optional)
+        followedRiskReward: validatedData.followedRiskReward,
+        followedIntradayHunter: validatedData.followedIntradayHunter,
+        overtrading: validatedData.overtrading,
+        waitedForRetracement: validatedData.waitedForRetracement,
+        hadPatienceWhileExiting: validatedData.hadPatienceWhileExiting,
+        showedGreed: validatedData.showedGreed,
+        showedFear: validatedData.showedFear,
+        tradedAgainstTrend: validatedData.tradedAgainstTrend,
+        psychologyNotes: validatedData.psychologyNotes,
         charges: {
           create: [
             {

@@ -80,6 +80,17 @@ const tradeFormSchema = z.object({
   hedgeExitDate: z.date().optional(),
   hedgeExitPrice: z.union([z.number().min(0), z.undefined()]).optional(),
   hedgeNotes: z.string().optional(),
+  
+  // Psychology & Behavioral Analysis (Optional)
+  followedRiskReward: z.boolean().optional(),
+  followedIntradayHunter: z.boolean().optional(),
+  overtrading: z.boolean().optional(),
+  waitedForRetracement: z.boolean().optional(),
+  hadPatienceWhileExiting: z.boolean().optional(),
+  showedGreed: z.boolean().optional(),
+  showedFear: z.boolean().optional(),
+  tradedAgainstTrend: z.boolean().optional(),
+  psychologyNotes: z.string().optional(),
 })
 
 type TradeFormSchema = z.infer<typeof tradeFormSchema>
@@ -114,11 +125,46 @@ const steps = [
   },
   {
     id: 4,
+    title: 'Behavioral Analysis',
+    subtitle: 'Trading behavior and psychology',
+    icon: BarChart3,
+  },
+  {
+    id: 5,
     title: 'Review & Save',
     subtitle: 'Final review and calculations',
     icon: CheckCircle,
   },
 ]
+
+// Helper functions for date handling
+const getDefaultDate = () => {
+  const now = new Date()
+  // Set to 9:15 AM IST (UTC+5:30)
+  now.setHours(9, 15, 0, 0)
+  return now
+}
+
+const getDefaultExitDate = () => {
+  const now = new Date()
+  // Set to 12:00 PM IST (UTC+5:30)
+  now.setHours(12, 0, 0, 0)
+  return now
+}
+
+// Helper function to format date for datetime-local input in IST
+const formatDateForInput = (date: Date | undefined) => {
+  if (!date) return ''
+  const dateObj = new Date(date)
+  if (isNaN(dateObj.getTime())) return ''
+  
+  // Convert to IST (UTC+5:30) for display
+  const istOffset = 5.5 * 60 // 5 hours 30 minutes in minutes
+  const utc = dateObj.getTime() + (dateObj.getTimezoneOffset() * 60000)
+  const ist = new Date(utc + (istOffset * 60000))
+  
+  return ist.toISOString().slice(0, 16)
+}
 
 export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = false, initialData, isEdit = false }: TradeFormPageProps) {
   const [currentStep, setCurrentStep] = useState(1)
@@ -165,7 +211,8 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
   // Default values for new trades
   const defaultValues: Partial<TradeFormSchema> = {
     tradeType: 'INTRADAY',
-    entryDate: new Date(),
+    entryDate: getDefaultDate(),
+    exitDate: getDefaultExitDate(),
     position: 'SELL',
     instrument: 'OPTIONS',
     capitalPoolId: '', // Will be auto-selected based on instrument
@@ -182,6 +229,16 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
     planning: '',
     lotSize: 75,
     ltpPrice: 0, // Default LTP price
+    // Psychology fields - auto-selected with sensible defaults (good behaviors = true, bad behaviors = false)
+    followedRiskReward: true, // "Followed planned risk-reward ratio" - good behavior
+    followedIntradayHunter: true, // "Followed intraday hunter strategy" - good behavior
+    overtrading: true, // "Avoided overtrading" - good behavior (true = avoided)
+    waitedForRetracement: true, // "Waited for proper retracement" - good behavior
+    hadPatienceWhileExiting: true, // "Had patience while exiting trade" - good behavior
+    showedGreed: false, // "Showed greed in this trade" - bad behavior (false = didn't show)
+    showedFear: false, // "Showed fear in this trade" - bad behavior (false = didn't show)
+    tradedAgainstTrend: false, // "Traded against market trend" - bad behavior (false = didn't trade against)
+    psychologyNotes: '',
   }
 
   const form = useForm<TradeFormSchema>({
@@ -640,6 +697,8 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
       case 3:
         return <StrategyPsychologyStep form={form} />
       case 4:
+        return <BehavioralAnalysisStep form={form} />
+      case 5:
         return <ReviewStep form={form} calculations={calculations} />
       default:
         return null
@@ -985,13 +1044,7 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
             <Input
               id="entryDate"
               type="datetime-local"
-              value={(() => {
-                const date = form.watch('entryDate')
-                if (!date) return ''
-                const dateObj = new Date(date)
-                if (isNaN(dateObj.getTime())) return ''
-                return dateObj.toISOString().slice(0, 16)
-              })()}
+              value={formatDateForInput(form.watch('entryDate'))}
               onChange={(e) => form.setValue('entryDate', new Date(e.target.value))}
               className="w-full"
             />
@@ -1209,13 +1262,7 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
               <Input
                 id="exitDate"
                 type="datetime-local"
-                value={(() => {
-                  const date = form.watch('exitDate')
-                  if (!date) return ''
-                  const dateObj = new Date(date)
-                  if (isNaN(dateObj.getTime())) return ''
-                  return dateObj.toISOString().slice(0, 16)
-                })()}
+                value={formatDateForInput(form.watch('exitDate'))}
                 onChange={(e) => form.setValue('exitDate', new Date(e.target.value))}
                 className="w-full"
               />
@@ -1321,13 +1368,7 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
                       <Input
                         id="hedgeEntryDate"
                         type="datetime-local"
-                        value={(() => {
-                          const date = form.watch('hedgeEntryDate')
-                          if (!date) return ''
-                          const dateObj = new Date(date)
-                          if (isNaN(dateObj.getTime())) return ''
-                          return dateObj.toISOString().slice(0, 16)
-                        })()}
+                        value={formatDateForInput(form.watch('hedgeEntryDate'))}
                         onChange={(e) => form.setValue('hedgeEntryDate', new Date(e.target.value))}
                         className="w-full mt-2"
                       />
@@ -1350,13 +1391,7 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
                       <Input
                         id="hedgeExitDate"
                         type="datetime-local"
-                        value={(() => {
-                          const date = form.watch('hedgeExitDate')
-                          if (!date) return ''
-                          const dateObj = new Date(date)
-                          if (isNaN(dateObj.getTime())) return ''
-                          return dateObj.toISOString().slice(0, 16)
-                        })()}
+                        value={formatDateForInput(form.watch('hedgeExitDate'))}
                         onChange={(e) => form.setValue('hedgeExitDate', new Date(e.target.value))}
                         className="w-full mt-2"
                       />
@@ -1861,6 +1896,174 @@ function ReviewStep({ form, calculations }: {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function BehavioralAnalysisStep({ form }: { form: ReturnType<typeof useForm<TradeFormSchema>> }) {
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+          Behavioral Analysis
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400">
+          Reflect on your trading behavior and psychology (optional)
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Risk Management Behavior */}
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <Shield className="h-5 w-5 text-blue-600" />
+              Risk Management
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="followedRiskReward"
+                  {...form.register('followedRiskReward')}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <Label htmlFor="followedRiskReward" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Followed planned risk-reward ratio
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="followedIntradayHunter"
+                  {...form.register('followedIntradayHunter')}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <Label htmlFor="followedIntradayHunter" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Followed intraday hunter strategy
+                </Label>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Trading Discipline */}
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Trading Discipline
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="overtrading"
+                  {...form.register('overtrading')}
+                  className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
+                />
+                <Label htmlFor="overtrading" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Avoided overtrading
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="waitedForRetracement"
+                  {...form.register('waitedForRetracement')}
+                  className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
+                />
+                <Label htmlFor="waitedForRetracement" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Waited for proper retracement
+                </Label>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Patience & Timing */}
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-purple-600" />
+              Patience & Timing
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="hadPatienceWhileExiting"
+                  {...form.register('hadPatienceWhileExiting')}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                />
+                <Label htmlFor="hadPatienceWhileExiting" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Had patience while exiting trade
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="tradedAgainstTrend"
+                  {...form.register('tradedAgainstTrend')}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                />
+                <Label htmlFor="tradedAgainstTrend" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Traded against market trend
+                </Label>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Emotional State */}
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <Brain className="h-5 w-5 text-red-600" />
+              Emotional State
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="showedGreed"
+                  {...form.register('showedGreed')}
+                  className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500"
+                />
+                <Label htmlFor="showedGreed" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Showed greed in this trade
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="showedFear"
+                  {...form.register('showedFear')}
+                  className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500"
+                />
+                <Label htmlFor="showedFear" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Showed fear in this trade
+                </Label>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Psychology Notes */}
+      <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-indigo-600" />
+            Additional Psychology Notes
+          </h3>
+          <Textarea
+            {...form.register('psychologyNotes')}
+            placeholder="Reflect on your emotional state, decision-making process, and any behavioral patterns you noticed..."
+            className="min-h-[120px] resize-none border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </div>
+      </Card>
     </div>
   )
 }
