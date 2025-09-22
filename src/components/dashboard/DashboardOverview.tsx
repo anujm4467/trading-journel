@@ -29,7 +29,7 @@ export function DashboardOverview() {
   
   // Initialize filters with useMemo to prevent infinite re-renders
   const initialFilters: AnalyticsFilters = useMemo(() => ({
-    instrumentType: 'ALL'
+    instrumentType: 'OPTIONS' // Default to Options as requested
   }), [])
 
   const { data, loading, error, refetch, setFilters, filters } = useAnalytics(initialFilters)

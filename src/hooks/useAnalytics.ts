@@ -5,6 +5,8 @@ export interface AnalyticsFilters {
   dateTo?: string
   instrumentType?: 'EQUITY' | 'FUTURES' | 'OPTIONS' | 'ALL'
   strategy?: string
+  timeRange?: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all'
+  selectedStrategies?: string[]
 }
 
 export interface AnalyticsData {
@@ -89,7 +91,11 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters)
+  const [filters, setFilters] = useState<AnalyticsFilters>({
+    timeRange: 'all',
+    selectedStrategies: [],
+    ...initialFilters
+  })
 
   // No need for useEffect - filters are already initialized with initialFilters
 
@@ -144,22 +150,25 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
           return
         }
 
+        // Apply time range filtering
+        const filteredData = applyTimeRangeFilter(analyticsData, filters.timeRange || 'all')
+        
         // Transform the data to match our expected format
         const transformedData: AnalyticsData = {
-          overview: analyticsData.overview,
-          strategyPerformance: analyticsData.strategyPerformance || [],
-          instrumentPerformance: analyticsData.instrumentPerformance || [],
-          chargesBreakdown: analyticsData.chargesBreakdown || [],
-          dailyPnlData: analyticsData.dailyPnlData || [],
-          monthlyPerformanceData: generateMonthlyData(analyticsData.dailyPnlData || []),
-          weeklyPerformanceData: generateWeeklyData(analyticsData.dailyPnlData || []),
+          overview: filteredData.overview,
+          strategyPerformance: filteredData.strategyPerformance || [],
+          instrumentPerformance: filteredData.instrumentPerformance || [],
+          chargesBreakdown: filteredData.chargesBreakdown || [],
+          dailyPnlData: filteredData.dailyPnlData || [],
+          monthlyPerformanceData: generateMonthlyData(filteredData.dailyPnlData || []),
+          weeklyPerformanceData: generateWeeklyData(filteredData.dailyPnlData || []),
           recentTrades: await getRecentTrades(filters),
-          strategyDistribution: generateStrategyDistribution(analyticsData.strategyPerformance || []),
-          timeAnalysis: generateTimeAnalysis(analyticsData.dailyPnlData || []),
+          strategyDistribution: generateStrategyDistribution(filteredData.strategyPerformance || []),
+          timeAnalysis: generateTimeAnalysis(filteredData.dailyPnlData || []),
           riskData: {
-            maxDrawdown: analyticsData.riskData?.maxDrawdown || 0,
-            sharpeRatio: analyticsData.riskData?.sharpeRatio || 0,
-            avgRiskReward: analyticsData.riskData?.avgRiskReward || 0
+            maxDrawdown: filteredData.riskData?.maxDrawdown || 0,
+            sharpeRatio: filteredData.riskData?.sharpeRatio || 0,
+            avgRiskReward: filteredData.riskData?.avgRiskReward || 0
           }
         }
 
@@ -352,4 +361,107 @@ function getTimeAgo(dateString: string): string {
     const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
     return `${diffInMinutes}m ago`
   }
+}
+
+// Helper function to apply time range filtering
+function applyTimeRangeFilter(data: any, timeRange: string): any {
+  if (timeRange === 'all') return data
+
+  const now = new Date()
+  let startDate: Date
+
+  switch (timeRange) {
+    case 'today':
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      break
+    case 'week':
+      startDate = new Date(now)
+      startDate.setDate(now.getDate() - 7)
+      break
+    case 'month':
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      break
+    case 'quarter':
+      const quarter = Math.floor(now.getMonth() / 3)
+      startDate = new Date(now.getFullYear(), quarter * 3, 1)
+      break
+    case 'year':
+      startDate = new Date(now.getFullYear(), 0, 1)
+      break
+    default:
+      return data
+  }
+
+  // Filter daily P&L data
+  const filteredDailyData = data.dailyPnlData?.filter((day: any) => {
+    const dayDate = new Date(day.date)
+    return dayDate >= startDate && dayDate <= now
+  }) || []
+
+  // Recalculate overview based on filtered data
+  const totalTrades = filteredDailyData.length
+  const totalPnl = filteredDailyData.reduce((sum: number, day: any) => sum + (day.pnl || 0), 0)
+  const winningDays = filteredDailyData.filter((day: any) => (day.pnl || 0) > 0).length
+  const losingDays = filteredDailyData.filter((day: any) => (day.pnl || 0) < 0).length
+  const winRate = totalTrades > 0 ? (winningDays / totalTrades) * 100 : 0
+
+  return {
+    ...data,
+    dailyPnlData: filteredDailyData,
+    overview: {
+      ...data.overview,
+      totalTrades,
+      totalNetPnl: totalPnl,
+      totalGrossPnl: totalPnl, // Simplified for now
+      winningTrades: winningDays,
+      losingTrades: losingDays,
+      winRate
+    }
+  }
+}
+
+// Helper function to generate weekly growth data
+export function generateWeeklyGrowthData(dailyData: Array<{ date: string; pnl: number }>): Array<{
+  week: string
+  pnl: number
+  trades: number
+  winRate: number
+  cumulativePnl: number
+  growth: number
+}> {
+  const weeklyMap = new Map<string, { pnl: number; trades: number; wins: number }>()
+  
+  dailyData.forEach(day => {
+    const date = new Date(day.date)
+    const weekStart = new Date(date)
+    weekStart.setDate(date.getDate() - date.getDay()) // Start of week (Sunday)
+    const weekKey = weekStart.toISOString().slice(0, 10)
+    
+    const existing = weeklyMap.get(weekKey) || { pnl: 0, trades: 0, wins: 0 }
+    existing.pnl += day.pnl
+    existing.trades += 1
+    if (day.pnl > 0) existing.wins += 1
+    weeklyMap.set(weekKey, existing)
+  })
+
+  const weeks = Array.from(weeklyMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([week, data]) => ({
+      week: new Date(week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      pnl: data.pnl,
+      trades: data.trades,
+      winRate: data.trades > 0 ? (data.wins / data.trades) * 100 : 0,
+      cumulativePnl: 0, // Will be calculated below
+      growth: 0 // Will be calculated below
+    }))
+
+  // Calculate cumulative P&L and growth
+  let cumulativePnl = 0
+  weeks.forEach((week, index) => {
+    cumulativePnl += week.pnl
+    week.cumulativePnl = cumulativePnl
+    week.growth = index > 0 ? ((week.pnl - weeks[index - 1].pnl) / Math.abs(weeks[index - 1].pnl)) * 100 : 0
+  })
+
+  return weeks
 }

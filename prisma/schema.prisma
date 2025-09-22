@@ -80,6 +80,9 @@ model Trade {
   brokerageType   String? // FLAT_PER_SIDE, PERCENTAGE
   brokerageValue  Float?
   
+  // Capital Management
+  capitalPoolId   String?
+  
   // Metadata
   notes           String?
   isDraft         Boolean @default(false)
@@ -94,6 +97,7 @@ model Trade {
   attachments     TradeAttachment[]
   optionsTrade    OptionsTrade?
   hedgePosition   HedgePosition?
+  capitalPool     CapitalPool? @relation(fields: [capitalPoolId], references: [id])
   
   @@map("trades")
 }
@@ -302,6 +306,7 @@ model CapitalPool {
   
   // Relations
   transactions    CapitalTransaction[]
+  trades          Trade[]
   
   @@map("capital_pools")
 }

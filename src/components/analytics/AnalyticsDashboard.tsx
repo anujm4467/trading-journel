@@ -24,12 +24,18 @@ import { WinLossChart } from './WinLossChart'
 import { StrategyPerformance } from './StrategyPerformance'
 import { TimeAnalysis } from './TimeAnalysis'
 import { RiskMetrics } from './RiskMetrics'
-import { useAnalytics, AnalyticsFilters } from '@/hooks/useAnalytics'
+import { StrategyFilter } from './StrategyFilter'
+import { WeeklyGrowthChart } from './WeeklyGrowthChart'
+import { GraphicalStrategyPerformance } from './GraphicalStrategyPerformance'
+import { useAnalytics, AnalyticsFilters, generateWeeklyGrowthData } from '@/hooks/useAnalytics'
 
 export function AnalyticsDashboard() {
-  const [filters] = useState<AnalyticsFilters>({
-    instrumentType: 'ALL'
+  const [filters, setFilters] = useState<AnalyticsFilters>({
+    instrumentType: 'ALL',
+    timeRange: 'all',
+    selectedStrategies: []
   })
+  const [viewMode, setViewMode] = useState<'cards' | 'charts' | 'table'>('charts')
 
   const { data, loading, error, refetch } = useAnalytics(filters)
 
@@ -198,6 +204,17 @@ export function AnalyticsDashboard() {
         </Card>
       </div>
 
+      {/* Strategy Filter */}
+      <StrategyFilter
+        strategies={data.strategyPerformance?.map(s => s.strategy) || []}
+        selectedStrategies={filters.selectedStrategies || []}
+        onStrategyChange={(strategies) => setFilters(prev => ({ ...prev, selectedStrategies: strategies }))}
+        timeRange={filters.timeRange || 'all'}
+        onTimeRangeChange={(range) => setFilters(prev => ({ ...prev, timeRange: range }))}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
+
       {/* Main Analytics Tabs */}
       <Tabs defaultValue="performance" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm p-1 rounded-lg">
@@ -224,6 +241,13 @@ export function AnalyticsDashboard() {
         </TabsList>
 
         <TabsContent value="performance" className="space-y-6">
+          {/* Weekly Growth Analysis */}
+          <WeeklyGrowthChart 
+            data={generateWeeklyGrowthData(data.dailyPnlData || [])}
+            selectedStrategies={filters.selectedStrategies || []}
+            timeRange={filters.timeRange || 'all'}
+          />
+
           <div className="grid gap-6 md:grid-cols-2">
             <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-white/20 shadow-xl">
               <CardHeader>
@@ -336,7 +360,25 @@ export function AnalyticsDashboard() {
         </TabsContent>
 
         <TabsContent value="strategies" className="space-y-6">
-          <StrategyPerformance data={data.strategyPerformance || []} />
+          <GraphicalStrategyPerformance 
+            data={data.strategyPerformance || []}
+            selectedStrategies={filters.selectedStrategies || []}
+            onStrategySelect={(strategy) => {
+              const current = filters.selectedStrategies || []
+              if (current.includes(strategy)) {
+                setFilters(prev => ({ 
+                  ...prev, 
+                  selectedStrategies: current.filter(s => s !== strategy) 
+                }))
+              } else {
+                setFilters(prev => ({ 
+                  ...prev, 
+                  selectedStrategies: [...current, strategy] 
+                }))
+              }
+            }}
+            viewMode={viewMode}
+          />
         </TabsContent>
 
         <TabsContent value="time" className="space-y-6">

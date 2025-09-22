@@ -42,6 +42,23 @@ export function DashboardFilters({
     })
   }
 
+  const handleInstrumentToggle = (instrumentType: 'EQUITY' | 'OPTIONS') => {
+    const currentType = filters.instrumentType
+    if (currentType === instrumentType) {
+      // If clicking the same type, deselect it and show all
+      onFiltersChange({
+        ...filters,
+        instrumentType: 'ALL'
+      })
+    } else {
+      // Select the clicked type
+      onFiltersChange({
+        ...filters,
+        instrumentType
+      })
+    }
+  }
+
   const handleStrategyChange = (value: string) => {
     onFiltersChange({
       ...filters,
@@ -91,6 +108,36 @@ export function DashboardFilters({
                 {timeframe}
               </Button>
             ))}
+          </div>
+
+          {/* Instrument Type Toggle Buttons */}
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <Button
+              variant={filters.instrumentType === 'OPTIONS' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleInstrumentToggle('OPTIONS')}
+              className={`px-3 py-1 text-xs font-medium transition-all duration-200 ${
+                filters.instrumentType === 'OPTIONS'
+                  ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
+            >
+              <BarChart3 className="h-3 w-3 mr-1" />
+              Options
+            </Button>
+            <Button
+              variant={filters.instrumentType === 'EQUITY' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleInstrumentToggle('EQUITY')}
+              className={`px-3 py-1 text-xs font-medium transition-all duration-200 ${
+                filters.instrumentType === 'EQUITY'
+                  ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
+            >
+              <TrendingUp className="h-3 w-3 mr-1" />
+              Equity
+            </Button>
           </div>
 
           {/* Filter Toggle */}

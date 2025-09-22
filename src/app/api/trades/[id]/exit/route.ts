@@ -6,8 +6,7 @@ import { calculateEquityPnL } from '@/utils/calculations'
 // Validation schema for exit trade
 const exitTradeSchema = z.object({
   exitPrice: z.number().positive('Exit price must be positive'),
-  exitDate: z.string().datetime('Invalid exit date format'),
-  capitalPoolId: z.string().optional()
+  exitDate: z.string().datetime('Invalid exit date format')
 })
 
 // POST /api/trades/[id]/exit - Exit a trade
@@ -148,10 +147,10 @@ export async function POST(
         }
       })
 
-      // Handle capital pool transactions if provided
-      if (validatedData.capitalPoolId) {
+      // Handle capital pool transactions if trade has a capital pool
+      if ((existingTrade as any).capitalPoolId) {
         const capitalPool = await tx.capitalPool.findUnique({
-          where: { id: validatedData.capitalPoolId }
+          where: { id: (existingTrade as any).capitalPoolId }
         })
 
         if (capitalPool) {
@@ -165,7 +164,7 @@ export async function POST(
             
             await tx.capitalTransaction.create({
               data: {
-                poolId: validatedData.capitalPoolId,
+                poolId: (existingTrade as any).capitalPoolId,
                 transactionType: pnlTransactionType,
                 amount: pnlAmount,
                 description: `Equity Position Exit: ${existingTrade.symbol} - ${pnlData.netPnl >= 0 ? 'Profit' : 'Loss'}`,
@@ -177,7 +176,7 @@ export async function POST(
 
             // Return invested amount back to capital pool and add P&L
             await tx.capitalPool.update({
-              where: { id: validatedData.capitalPoolId },
+              where: { id: (existingTrade as any).capitalPoolId },
               data: {
                 currentAmount: capitalPool.currentAmount + investedAmount + pnlData.netPnl,
                 totalInvested: capitalPool.totalInvested - investedAmount, // Remove from invested
