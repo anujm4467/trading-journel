@@ -16,7 +16,9 @@ import {
   Wallet,
   ChevronLeft,
   ChevronRight,
-  Database
+  Database,
+  Target,
+  TrendingUp
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -50,10 +52,22 @@ const navigationItems = [
     description: 'Capital management'
   },
   {
+    name: 'Predictions',
+    href: '/predictions',
+    icon: Target,
+    description: 'Strategy predictions & tracking'
+  },
+  {
     name: 'Analytics',
     href: '/analytics',
     icon: BarChart3,
     description: 'Performance analysis'
+  },
+  {
+    name: 'Prediction Analytics',
+    href: '/predictions/analytics',
+    icon: TrendingUp,
+    description: 'Prediction performance metrics'
   },
   {
     name: 'Psychology',

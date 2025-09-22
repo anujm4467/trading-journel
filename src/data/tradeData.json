@@ -29,6 +29,12 @@
       "name": "Scalping",
       "color": "bg-red-100 text-red-800 border-red-200",
       "hoverColor": "hover:bg-red-200"
+    },
+    {
+      "id": "trap",
+      "name": "Trap",
+      "color": "bg-gray-100 text-gray-800 border-gray-200",
+      "hoverColor": "hover:bg-gray-200"
     }
   ],
   "emotionalStates": [

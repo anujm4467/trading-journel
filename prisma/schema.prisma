@@ -436,6 +436,24 @@ model SystemConfig {
   @@map("system_config")
 }
 
+// Prediction System
+model Prediction {
+  id              String            @id @default(cuid())
+  predictionDate  DateTime
+  strategy        String
+  direction       PredictionDirection
+  strategyNotes   String?
+  confidence      Int               // 1-10 scale
+  status          PredictionStatus  @default(PENDING)
+  result          PredictionResult?
+  failureReason   String?
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@map("predictions")
+}
+
 // Audit Trail
 model AuditLog {
   id          String   @id @default(cuid())
@@ -495,4 +513,21 @@ enum TransactionType {
   LOSS
   TRANSFER_IN
   TRANSFER_OUT
+}
+
+enum PredictionStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
+enum PredictionResult {
+  SUCCESS
+  FAILURE
+}
+
+enum PredictionDirection {
+  BULLISH
+  BEARISH
+  NEUTRAL
 }
