@@ -2,22 +2,29 @@
 
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { 
   FileText, 
   Calculator, 
   Shield, 
   Brain, 
   BarChart3,
-  Clock
+  Clock,
+  LogOut
 } from 'lucide-react'
 import tradeData from '@/data/tradeData.json'
 import { TradeDetails } from '@/types/tradeDetails'
+import { ExitTradeModal } from './ExitTradeModal'
+import { useState } from 'react'
 
 interface TradeDetailsViewProps {
   trade: TradeDetails
+  onExit?: () => void
 }
 
-export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
+export function TradeDetailsView({ trade, onExit }: TradeDetailsViewProps) {
+  const [exitModalOpen, setExitModalOpen] = useState(false)
+  const [isExiting, setIsExiting] = useState(false)
   // Calculate P&L and charges
   const entryValue = trade.entryPrice * trade.quantity
   const exitValue = trade.exitPrice ? trade.exitPrice * trade.quantity : 0
@@ -102,15 +109,60 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
   const netPnl = grossPnl - charges.total
   const percentageReturn = entryValue > 0 ? (netPnl / entryValue) * 100 : 0
 
+  const handleExitConfirm = async (exitPrice: number, exitDate: Date) => {
+    setIsExiting(true)
+    try {
+      const response = await fetch(`/api/trades/${trade.id}/exit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          exitPrice,
+          exitDate: exitDate.toISOString(),
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to exit trade')
+      }
+
+      // Close modal and refresh data
+      setExitModalOpen(false)
+      if (onExit) {
+        onExit()
+      }
+    } catch (error) {
+      console.error('Failed to exit trade:', error)
+      // You might want to show a toast notification here
+    } finally {
+      setIsExiting(false)
+    }
+  }
+
+  const isOpen = !trade.exitPrice
+
   return (
     <div className="space-y-8">
       {/* Trade Summary Section */}
       <div className="space-y-6">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-            <FileText className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Trade Summary</h3>
           </div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Trade Summary</h3>
+          {isOpen && (
+            <Button
+              onClick={() => setExitModalOpen(true)}
+              className="bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Exit Position
+            </Button>
+          )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
@@ -649,6 +701,15 @@ export function TradeDetailsView({ trade }: TradeDetailsViewProps) {
           )}
         </div>
       )}
+
+      {/* Exit Trade Modal */}
+      <ExitTradeModal
+        trade={trade}
+        isOpen={exitModalOpen}
+        onClose={() => setExitModalOpen(false)}
+        onExit={handleExitConfirm}
+        isLoading={isExiting}
+      />
     </div>
   )
 }

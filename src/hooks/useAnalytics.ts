@@ -33,6 +33,11 @@ export interface AnalyticsData {
     pnl: number
     winRate: number
   }>
+  chargesBreakdown: Array<{
+    type: string
+    amount: number
+    count: number
+  }>
   dailyPnlData: Array<{
     date: string
     pnl: number
@@ -76,7 +81,8 @@ export interface UseAnalyticsReturn {
   loading: boolean
   error: string | null
   refetch: () => Promise<void>
-  setFilters: (filters: AnalyticsFilters) => void
+  setFilters: (filters: Partial<AnalyticsFilters>) => void
+  filters: AnalyticsFilters
 }
 
 export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalyticsReturn {
@@ -85,73 +91,101 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters)
 
-  const fetchAnalytics = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      // Build query parameters
-      const params = new URLSearchParams()
-      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom)
-      if (filters.dateTo) params.append('dateTo', filters.dateTo)
-      if (filters.instrumentType && filters.instrumentType !== 'ALL') {
-        params.append('instrumentType', filters.instrumentType)
-      }
-      if (filters.strategy) params.append('strategy', filters.strategy)
+  // No need for useEffect - filters are already initialized with initialFilters
 
-      const response = await fetch(`/api/analytics?${params.toString()}`)
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const analyticsData = await response.json()
-      
-      if (analyticsData.error) {
-        setError(analyticsData.error)
-        return
-      }
-
-      // Transform the data to match our expected format
-      const transformedData: AnalyticsData = {
-        overview: analyticsData.overview,
-        strategyPerformance: analyticsData.strategyPerformance || [],
-        instrumentPerformance: analyticsData.instrumentPerformance || [],
-        dailyPnlData: analyticsData.dailyPnlData || [],
-        monthlyPerformanceData: generateMonthlyData(analyticsData.dailyPnlData || []),
-        weeklyPerformanceData: generateWeeklyData(analyticsData.dailyPnlData || []),
-        recentTrades: await getRecentTrades(filters),
-        strategyDistribution: generateStrategyDistribution(analyticsData.strategyPerformance || []),
-        timeAnalysis: generateTimeAnalysis(analyticsData.dailyPnlData || []),
-        riskData: {
-          maxDrawdown: analyticsData.riskData?.maxDrawdown || 0,
-          sharpeRatio: analyticsData.riskData?.sharpeRatio || 0,
-          avgRiskReward: analyticsData.riskData?.avgRiskReward || 0
-        }
-      }
-
-      setData(transformedData)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch analytics data')
-    } finally {
-      setLoading(false)
-    }
-  }, [filters])
-
-  const handleSetFilters = useCallback((newFilters: AnalyticsFilters) => {
-    setFilters(prev => ({ ...prev, ...newFilters }))
+  const handleSetFilters = useCallback((newFilters: Partial<AnalyticsFilters>) => {
+    console.log('useAnalytics - handleSetFilters called with:', newFilters)
+    setFilters(prev => {
+      const updated = { ...prev, ...newFilters }
+      console.log('useAnalytics - previous filters:', prev)
+      console.log('useAnalytics - updated filters:', updated)
+      return updated
+    })
   }, [])
 
   useEffect(() => {
-    fetchAnalytics()
-  }, [fetchAnalytics])
+    console.log('useAnalytics - useEffect triggered with filters:', filters)
+    
+    // Debounce the API call to prevent too many rapid requests
+    const timeoutId = setTimeout(async () => {
+      try {
+        console.log('useAnalytics - fetchAnalytics called with filters:', filters)
+        console.log('useAnalytics - filter details:', {
+          dateFrom: filters.dateFrom,
+          dateTo: filters.dateTo,
+          instrumentType: filters.instrumentType,
+          strategy: filters.strategy
+        })
+        setLoading(true)
+        setError(null)
+        
+        // Build query parameters
+        const params = new URLSearchParams()
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom)
+        if (filters.dateTo) params.append('dateTo', filters.dateTo)
+        if (filters.instrumentType && filters.instrumentType !== 'ALL') {
+          params.append('instrumentType', filters.instrumentType)
+        }
+        if (filters.strategy) params.append('strategy', filters.strategy)
+
+        const url = `/api/analytics?${params.toString()}`
+        console.log('useAnalytics - making API call to:', url)
+        console.log('useAnalytics - query params:', params.toString())
+        const response = await fetch(url)
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const analyticsData = await response.json()
+        
+        if (analyticsData.error) {
+          setError(analyticsData.error)
+          return
+        }
+
+        // Transform the data to match our expected format
+        const transformedData: AnalyticsData = {
+          overview: analyticsData.overview,
+          strategyPerformance: analyticsData.strategyPerformance || [],
+          instrumentPerformance: analyticsData.instrumentPerformance || [],
+          chargesBreakdown: analyticsData.chargesBreakdown || [],
+          dailyPnlData: analyticsData.dailyPnlData || [],
+          monthlyPerformanceData: generateMonthlyData(analyticsData.dailyPnlData || []),
+          weeklyPerformanceData: generateWeeklyData(analyticsData.dailyPnlData || []),
+          recentTrades: await getRecentTrades(filters),
+          strategyDistribution: generateStrategyDistribution(analyticsData.strategyPerformance || []),
+          timeAnalysis: generateTimeAnalysis(analyticsData.dailyPnlData || []),
+          riskData: {
+            maxDrawdown: analyticsData.riskData?.maxDrawdown || 0,
+            sharpeRatio: analyticsData.riskData?.sharpeRatio || 0,
+            avgRiskReward: analyticsData.riskData?.avgRiskReward || 0
+          }
+        }
+
+        setData(transformedData)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch analytics data')
+      } finally {
+        setLoading(false)
+      }
+    }, 300) // 300ms debounce
+    
+    return () => clearTimeout(timeoutId)
+  }, [filters]) // Only depend on filters
+
+  const refetch = useCallback(async () => {
+    // Trigger a refetch by updating filters (this will trigger the useEffect)
+    setFilters(prev => ({ ...prev }))
+  }, [])
 
   return {
     data,
     loading,
     error,
-    refetch: fetchAnalytics,
-    setFilters: handleSetFilters
+    refetch,
+    setFilters: handleSetFilters, // This is the internal function that does merging
+    filters
   }
 }
 

@@ -27,7 +27,7 @@ export function calculateCharges(
   position: PositionType,
   customRates?: Partial<ChargeRates>
 ): ChargeCalculation {
-  // For equity positions, no charges are applied
+  // For equity positions, no charges are applied as per current regulations
   if (instrument === 'EQUITY') {
     return {
       brokerage: 0,

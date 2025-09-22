@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Logo, LogoCompact } from '@/components/ui/Logo'
 import { 
   LayoutDashboard,
   FileText,
@@ -102,13 +101,11 @@ export function Sidebar({ className }: SidebarProps) {
         </Button>
       </div>
 
-      {/* Header */}
+      {/* Header - Empty since logo moved to topbar */}
       <div className="flex h-16 items-center px-4 border-b">
-        {!isCollapsed ? (
-          <Logo size="md" />
-        ) : (
-          <LogoCompact size="md" />
-        )}
+        <div className="text-sm font-medium text-muted-foreground">
+          {!isCollapsed ? 'Navigation' : ''}
+        </div>
       </div>
 
       {/* Navigation */}

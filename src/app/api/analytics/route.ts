@@ -10,10 +10,27 @@ export async function GET(request: NextRequest) {
     const strategy = searchParams.get('strategy')
     const instrumentType = searchParams.get('instrumentType')
 
-    // Build date filter
+    console.log('Analytics API - Received request with params:', {
+      dateFrom,
+      dateTo,
+      strategy,
+      instrumentType
+    })
+
+    // Build date filter - normalize dates to start/end of day for proper filtering
     const dateFilter: Record<string, Date> = {}
-    if (dateFrom) dateFilter.gte = new Date(dateFrom)
-    if (dateTo) dateFilter.lte = new Date(dateTo)
+    if (dateFrom) {
+      const fromDate = new Date(dateFrom)
+      // Set to start of day (00:00:00)
+      fromDate.setHours(0, 0, 0, 0)
+      dateFilter.gte = fromDate
+    }
+    if (dateTo) {
+      const toDate = new Date(dateTo)
+      // Set to end of day (23:59:59.999)
+      toDate.setHours(23, 59, 59, 999)
+      dateFilter.lte = toDate
+    }
 
     // Build where clause
     const where: Record<string, unknown> = {}
@@ -37,7 +54,12 @@ export async function GET(request: NextRequest) {
     const trades = await prisma.trade.findMany({
       where,
       include: {
-        charges: true
+        charges: true,
+        hedgePosition: {
+          include: {
+            charges: true
+          }
+        }
       }
     })
 
@@ -66,9 +88,12 @@ export async function GET(request: NextRequest) {
       if (trade.exitPrice) {
         const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
         const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+        const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+        const totalTradeCharges = tradeCharges + hedgeCharges
+        
         totalGrossPnl += grossPnl
-        totalCharges += tradeCharges
-        totalNetPnl += grossPnl - tradeCharges
+        totalCharges += totalTradeCharges
+        totalNetPnl += grossPnl - totalTradeCharges
       }
     })
 
@@ -77,43 +102,55 @@ export async function GET(request: NextRequest) {
       trades.filter(trade => {
         if (!trade.exitPrice) return false
         const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
-        return grossPnl > 0
+        const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+        const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+        return grossPnl - (tradeCharges + hedgeCharges) > 0
       }).reduce((sum, trade) => {
         const grossPnl = (trade.exitPrice! - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
         const tradeCharges = trade.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-        return sum + grossPnl - tradeCharges
+        const hedgeCharges = trade.hedgePosition?.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
+        return sum + grossPnl - (tradeCharges + hedgeCharges)
       }, 0) / winningTrades : 0
 
     const averageLoss = losingTrades > 0 ?
       trades.filter(trade => {
         if (!trade.exitPrice) return false
         const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
-        return grossPnl < 0
+        const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+        const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+        return grossPnl - (tradeCharges + hedgeCharges) < 0
       }).reduce((sum, trade) => {
         const grossPnl = (trade.exitPrice! - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
         const tradeCharges = trade.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-        return sum + grossPnl - tradeCharges
+        const hedgeCharges = trade.hedgePosition?.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
+        return sum + grossPnl - (tradeCharges + hedgeCharges)
       }, 0) / losingTrades : 0
 
     // Calculate profit factor
     const totalWins = Math.abs(trades.filter(trade => {
       if (!trade.exitPrice) return false
       const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
-      return grossPnl > 0
+      const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+      const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+      return grossPnl - (tradeCharges + hedgeCharges) > 0
     }).reduce((sum, trade) => {
       const grossPnl = (trade.exitPrice! - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
       const tradeCharges = trade.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-      return sum + grossPnl - tradeCharges
+      const hedgeCharges = trade.hedgePosition?.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
+      return sum + grossPnl - (tradeCharges + hedgeCharges)
     }, 0))
 
     const totalLosses = Math.abs(trades.filter(trade => {
       if (!trade.exitPrice) return false
       const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
-      return grossPnl < 0
+      const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+      const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+      return grossPnl - (tradeCharges + hedgeCharges) < 0
     }).reduce((sum, trade) => {
       const grossPnl = (trade.exitPrice! - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
       const tradeCharges = trade.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-      return sum + grossPnl - tradeCharges
+      const hedgeCharges = trade.hedgePosition?.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
+      return sum + grossPnl - (tradeCharges + hedgeCharges)
     }, 0))
 
     const profitFactor = totalLosses > 0 ? totalWins / totalLosses : 0
@@ -221,7 +258,12 @@ export async function GET(request: NextRequest) {
             instrument: instrument.instrument
           },
           include: {
-            charges: true
+            charges: true,
+            hedgePosition: {
+              include: {
+                charges: true
+              }
+            }
           }
         })
 
@@ -229,7 +271,8 @@ export async function GET(request: NextRequest) {
           if (!trade.exitPrice) return false
           const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
           const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-          return grossPnl - tradeCharges > 0
+          const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+          return grossPnl - (tradeCharges + hedgeCharges) > 0
         }).length
 
         const winRate = instrumentTrades.length > 0 ? (instrumentWinningTrades / instrumentTrades.length) * 100 : 0
@@ -242,6 +285,57 @@ export async function GET(request: NextRequest) {
         }
       })
     )
+
+    // Calculate charges breakdown by type (including hedge charges)
+    const tradeChargesBreakdown = await prisma.tradeCharge.groupBy({
+      by: ['chargeType'],
+      where: {
+        trade: where
+      },
+      _sum: {
+        amount: true
+      },
+      _count: true
+    })
+
+    const hedgeChargesBreakdown = await prisma.hedgeCharge.groupBy({
+      by: ['chargeType'],
+      where: {
+        hedgePosition: {
+          trade: where
+        }
+      },
+      _sum: {
+        amount: true
+      },
+      _count: true
+    })
+
+    // Combine trade charges and hedge charges
+    const allChargesMap = new Map<string, { amount: number; count: number }>()
+    
+    // Add trade charges
+    tradeChargesBreakdown.forEach(charge => {
+      allChargesMap.set(charge.chargeType, {
+        amount: charge._sum.amount || 0,
+        count: charge._count
+      })
+    })
+    
+    // Add hedge charges
+    hedgeChargesBreakdown.forEach(charge => {
+      const existing = allChargesMap.get(charge.chargeType) || { amount: 0, count: 0 }
+      allChargesMap.set(charge.chargeType, {
+        amount: existing.amount + (charge._sum.amount || 0),
+        count: existing.count + charge._count
+      })
+    })
+
+    const chargesBreakdownData = Array.from(allChargesMap.entries()).map(([type, data]) => ({
+      type,
+      amount: Math.round(data.amount * 100) / 100,
+      count: data.count
+    }))
 
     return NextResponse.json({
       overview: {
@@ -258,6 +352,7 @@ export async function GET(request: NextRequest) {
       },
       strategyPerformance: strategyPerformanceData,
       instrumentPerformance: instrumentPerformanceData,
+      chargesBreakdown: chargesBreakdownData,
       dailyPnlData
     })
   } catch (error) {
@@ -268,3 +363,4 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+

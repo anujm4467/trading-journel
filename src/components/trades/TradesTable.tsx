@@ -29,10 +29,14 @@ import {
   Download,
   Plus,
   Search,
-  Loader2
+  Loader2,
+  LogOut
 } from 'lucide-react'
 import { formatCurrency, formatPercentage } from '@/utils/calculations'
 import { useTrades } from '@/hooks/useTrades'
+import { ExitTradeModal } from './ExitTradeModal'
+import { Trade } from '@/types/trade'
+import { TradeDetails } from '@/types/tradeDetails'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -54,6 +58,9 @@ export function TradesTable() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [exitModalOpen, setExitModalOpen] = useState(false)
+  const [selectedTradeForExit, setSelectedTradeForExit] = useState<TradeDetails | null>(null)
+  const [isExiting, setIsExiting] = useState(false)
 
   // Update search filter when search query changes
   useEffect(() => {
@@ -117,6 +124,151 @@ export function TradesTable() {
 
   const handleTradeClick = (tradeId: string) => {
     router.push(`/trades/${tradeId}`)
+  }
+
+  // Helper function to convert Trade to TradeDetails
+  const convertTradeToDetails = (trade: Trade): TradeDetails => {
+    return {
+      id: trade.id,
+      tradeType: trade.tradeType || 'INTRADAY',
+      symbol: trade.symbol,
+      instrument: trade.instrument || 'EQUITY',
+      position: trade.position || 'BUY',
+      quantity: trade.quantity,
+      entryPrice: trade.entryPrice,
+      exitPrice: trade.exitPrice || undefined,
+      entryValue: trade.entryValue || trade.entryPrice * trade.quantity,
+      exitValue: trade.exitValue || undefined,
+      turnover: trade.turnover || (trade.entryValue || trade.entryPrice * trade.quantity) + (trade.exitValue || 0),
+      grossPnl: trade.grossPnl || undefined,
+      netPnl: trade.netPnl || undefined,
+      totalCharges: trade.totalCharges || undefined,
+      percentageReturn: trade.percentageReturn || undefined,
+      entryDate: typeof trade.entryDate === 'string' ? trade.entryDate : trade.entryDate.toISOString(),
+      exitDate: trade.exitDate ? (typeof trade.exitDate === 'string' ? trade.exitDate : trade.exitDate.toISOString()) : undefined,
+      holdingDuration: trade.holdingDuration || undefined,
+      createdAt: typeof trade.createdAt === 'string' ? trade.createdAt : trade.createdAt.toISOString(),
+      updatedAt: typeof trade.updatedAt === 'string' ? trade.updatedAt : trade.updatedAt.toISOString(),
+      stopLoss: trade.stopLoss || undefined,
+      target: trade.target || undefined,
+      riskAmount: trade.riskAmount || undefined,
+      rewardAmount: trade.rewardAmount || undefined,
+      riskRewardRatio: trade.riskRewardRatio || undefined,
+      confidenceLevel: trade.confidenceLevel || undefined,
+      emotionalState: trade.emotionalState || undefined,
+      marketCondition: trade.marketCondition || undefined,
+      planning: trade.planning || undefined,
+      notes: trade.notes || undefined,
+      brokerName: trade.brokerName || undefined,
+      customBrokerage: trade.customBrokerage || false,
+      brokerageType: trade.brokerageType || undefined,
+      brokerageValue: trade.brokerageValue || undefined,
+      isDraft: trade.isDraft || false,
+      optionsTrade: trade.optionsTrade ? {
+        id: trade.optionsTrade.id,
+        optionType: trade.optionsTrade.optionType,
+        strikePrice: trade.optionsTrade.strikePrice,
+        expiryDate: typeof trade.optionsTrade.expiryDate === 'string' ? trade.optionsTrade.expiryDate : trade.optionsTrade.expiryDate.toISOString(),
+        lotSize: trade.optionsTrade.lotSize,
+        underlying: trade.optionsTrade.underlying
+      } : undefined,
+      hedgePosition: trade.hedgePosition ? {
+        id: trade.hedgePosition.id,
+        optionType: trade.hedgePosition.position === 'BUY' ? 'CALL' : 'PUT', // Convert position to option type
+        entryDate: typeof trade.hedgePosition.entryDate === 'string' ? trade.hedgePosition.entryDate : trade.hedgePosition.entryDate.toISOString(),
+        exitDate: trade.hedgePosition.exitDate ? (typeof trade.hedgePosition.exitDate === 'string' ? trade.hedgePosition.exitDate : trade.hedgePosition.exitDate.toISOString()) : undefined,
+        entryPrice: trade.hedgePosition.entryPrice,
+        exitPrice: trade.hedgePosition.exitPrice || undefined,
+        quantity: trade.hedgePosition.quantity,
+        entryValue: trade.hedgePosition.entryValue,
+        exitValue: trade.hedgePosition.exitValue || undefined,
+        grossPnl: trade.hedgePosition.grossPnl || undefined,
+        netPnl: trade.hedgePosition.netPnl || undefined,
+        totalCharges: trade.hedgePosition.totalCharges || undefined,
+        percentageReturn: trade.hedgePosition.percentageReturn || undefined,
+        notes: trade.hedgePosition.notes || undefined
+      } : undefined,
+      charges: trade.charges ? (
+        Array.isArray(trade.charges) 
+          ? trade.charges.map(charge => ({
+              id: charge.id,
+              tradeId: charge.tradeId,
+              chargeType: charge.chargeType as 'BROKERAGE' | 'STT' | 'EXCHANGE' | 'SEBI' | 'STAMP_DUTY' | 'GST',
+              rate: charge.rate,
+              baseAmount: charge.baseAmount,
+              amount: charge.amount,
+              description: charge.description || undefined,
+              createdAt: typeof charge.createdAt === 'string' ? charge.createdAt : charge.createdAt.toISOString()
+            }))
+          : trade.charges
+      ) : undefined,
+      strategyTags: trade.strategyTags?.map(st => ({
+        id: st.strategyTagId,
+        name: st.strategyTag.name,
+        color: st.strategyTag.color,
+        description: st.strategyTag.description || undefined
+      })) || undefined,
+      emotionalTags: trade.emotionalTags?.map(et => ({
+        id: et.emotionalTagId,
+        name: et.emotionalTag.name,
+        color: et.emotionalTag.color,
+        description: et.emotionalTag.description || undefined
+      })) || undefined,
+      marketTags: trade.marketTags?.map(mt => ({
+        id: mt.marketTagId,
+        name: mt.marketTag.name,
+        color: mt.marketTag.color,
+        description: mt.marketTag.description || undefined
+      })) || undefined,
+      attachments: trade.attachments?.map(att => ({
+        id: att.id,
+        fileName: att.fileName,
+        filePath: att.filePath,
+        fileSize: att.fileSize,
+        fileType: att.fileType,
+        createdAt: typeof att.createdAt === 'string' ? att.createdAt : att.createdAt.toISOString()
+      })) || undefined
+    }
+  }
+
+  const handleExitTrade = (trade: Trade) => {
+    setSelectedTradeForExit(convertTradeToDetails(trade))
+    setExitModalOpen(true)
+  }
+
+  const handleExitConfirm = async (exitPrice: number, exitDate: Date) => {
+    if (!selectedTradeForExit) return
+
+    setIsExiting(true)
+    try {
+      const response = await fetch(`/api/trades/${selectedTradeForExit.id}/exit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          exitPrice,
+          exitDate: exitDate.toISOString(),
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to exit trade')
+      }
+
+      // Refresh trades data
+      await refetch()
+      
+      // Close modal
+      setExitModalOpen(false)
+      setSelectedTradeForExit(null)
+    } catch (error) {
+      console.error('Failed to exit trade:', error)
+      // You might want to show a toast notification here
+    } finally {
+      setIsExiting(false)
+    }
   }
 
   // Calculate summary metrics
@@ -492,6 +644,15 @@ export function TradesTable() {
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
                         </DropdownMenuItem>
+                        {isOpen && (
+                          <DropdownMenuItem 
+                            onClick={() => handleExitTrade(trade)}
+                            className="text-green-600 dark:text-green-400"
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            Exit Position
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
@@ -546,6 +707,18 @@ export function TradesTable() {
           </div>
         </div>
       )}
+
+      {/* Exit Trade Modal */}
+      <ExitTradeModal
+        trade={selectedTradeForExit}
+        isOpen={exitModalOpen}
+        onClose={() => {
+          setExitModalOpen(false)
+          setSelectedTradeForExit(null)
+        }}
+        onExit={handleExitConfirm}
+        isLoading={isExiting}
+      />
     </div>
   )
 }

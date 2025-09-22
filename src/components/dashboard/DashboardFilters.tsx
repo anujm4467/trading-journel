@@ -76,7 +76,7 @@ export function DashboardFilters({
         <div className="flex items-center gap-2">
           {/* Timeframe Selector */}
           <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-            {['Today', '7D', '30D', '90D'].map((timeframe) => (
+            {['Today', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'].map((timeframe) => (
               <Button
                 key={timeframe}
                 variant={activeTimeframe === timeframe ? 'default' : 'ghost'}

@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { SymbolSearchInput } from '@/components/forms/SymbolSearchInput'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { TradeFormData, CapitalPool } from '@/types/trade'
 import { TradeDetails } from '@/types/tradeDetails'
 import { calculateCharges, calculateEquityPnL } from '@/utils/calculations'
@@ -140,15 +141,15 @@ const steps = [
 // Helper functions for date handling
 const getDefaultDate = () => {
   const now = new Date()
-  // Set to 9:15 AM IST (UTC+5:30)
+  // Set to 9:15 AM
   now.setHours(9, 15, 0, 0)
   return now
 }
 
 const getDefaultExitDate = () => {
   const now = new Date()
-  // Set to 12:00 PM IST (UTC+5:30)
-  now.setHours(12, 0, 0, 0)
+  // Set to 3:30 PM (market close time)
+  now.setHours(15, 30, 0, 0)
   return now
 }
 
@@ -1040,13 +1041,11 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
 
           {/* Entry Date & Time */}
           <div className="space-y-2">
-            <Label htmlFor="entryDate">Entry Date & Time</Label>
-            <Input
-              id="entryDate"
-              type="datetime-local"
-              value={formatDateForInput(form.watch('entryDate'))}
-              onChange={(e) => form.setValue('entryDate', new Date(e.target.value))}
-              className="w-full"
+            <DateTimePicker
+              label="Entry Date & Time"
+              value={form.watch('entryDate')}
+              onChange={(date) => form.setValue('entryDate', date)}
+              placeholder="Select entry date and time"
             />
           </div>
 
@@ -1258,13 +1257,11 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
           {/* Exit Date & Time - Only for Intraday trades (not for equity running trades) */}
           {form.watch('tradeType') === 'INTRADAY' && form.watch('instrument') !== 'EQUITY' && (
             <div className="space-y-2">
-              <Label htmlFor="exitDate">Exit Date & Time</Label>
-              <Input
-                id="exitDate"
-                type="datetime-local"
-                value={formatDateForInput(form.watch('exitDate'))}
-                onChange={(e) => form.setValue('exitDate', new Date(e.target.value))}
-                className="w-full"
+              <DateTimePicker
+                label="Exit Date & Time"
+                value={form.watch('exitDate')}
+                onChange={(date) => form.setValue('exitDate', date)}
+                placeholder="Select exit date and time"
               />
             </div>
           )}
@@ -1364,13 +1361,11 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
                       />
                     </div>
                     <div>
-                      <Label htmlFor="hedgeEntryDate">Hedge Entry Date & Time</Label>
-                      <Input
-                        id="hedgeEntryDate"
-                        type="datetime-local"
-                        value={formatDateForInput(form.watch('hedgeEntryDate'))}
-                        onChange={(e) => form.setValue('hedgeEntryDate', new Date(e.target.value))}
-                        className="w-full mt-2"
+                      <DateTimePicker
+                        label="Hedge Entry Date & Time"
+                        value={form.watch('hedgeEntryDate')}
+                        onChange={(date) => form.setValue('hedgeEntryDate', date)}
+                        placeholder="Select hedge entry date and time"
                       />
                     </div>
                     <div>
@@ -1387,13 +1382,11 @@ function BasicInfoStep({ form, pools }: { form: ReturnType<typeof useForm<TradeF
                       />
                     </div>
                     <div>
-                      <Label htmlFor="hedgeExitDate">Hedge Exit Date & Time</Label>
-                      <Input
-                        id="hedgeExitDate"
-                        type="datetime-local"
-                        value={formatDateForInput(form.watch('hedgeExitDate'))}
-                        onChange={(e) => form.setValue('hedgeExitDate', new Date(e.target.value))}
-                        className="w-full mt-2"
+                      <DateTimePicker
+                        label="Hedge Exit Date & Time"
+                        value={form.watch('hedgeExitDate')}
+                        onChange={(date) => form.setValue('hedgeExitDate', date)}
+                        placeholder="Select hedge exit date and time"
                       />
                     </div>
                     <div>

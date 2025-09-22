@@ -23,111 +23,27 @@ import {
 
 interface AppHeaderProps {
   onExport: (format: string) => void
-  onDateRangeChange: (range: string) => void
-  onInstrumentFilter: (instruments: string[]) => void
   onSearch: (query: string) => void
-  selectedInstruments: string[]
   searchQuery: string
 }
 
-const dateRangePresets = [
-  { label: 'Today', value: 'today' },
-  { label: '7D', value: '7d' },
-  { label: '30D', value: '30d' },
-  { label: '90D', value: '90d' },
-  { label: 'MTD', value: 'mtd' },
-  { label: 'YTD', value: 'ytd' },
-  { label: 'Custom', value: 'custom' }
-]
-
-const instruments = [
-  { label: 'Equity', value: 'EQUITY', count: 0 },
-  { label: 'Futures', value: 'FUTURES', count: 0 },
-  { label: 'Options', value: 'OPTIONS', count: 0 }
-]
 
 export function AppHeader({
   onExport,
-  onDateRangeChange,
-  onInstrumentFilter,
   onSearch,
-  selectedInstruments,
   searchQuery
 }: AppHeaderProps) {
-  const [selectedDateRange, setSelectedDateRange] = useState('30d')
-
-  const handleDateRangeChange = (range: string) => {
-    setSelectedDateRange(range)
-    onDateRangeChange(range)
-  }
-
-  const handleInstrumentToggle = (instrument: string) => {
-    const newSelection = selectedInstruments.includes(instrument)
-      ? selectedInstruments.filter(i => i !== instrument)
-      : [...selectedInstruments, instrument]
-    onInstrumentFilter(newSelection)
-  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-900/60 shadow-lg">
       <div className="flex h-16 items-center justify-between px-4 lg:px-6">
-        {/* Logo - Only visible on mobile since sidebar is hidden */}
-        <div className="flex-shrink-0 md:hidden">
-          <Logo size="sm" className="hover:scale-105 transition-transform duration-300" />
-        </div>
-        
-        {/* Spacer for desktop - Logo is in sidebar */}
-        <div className="hidden md:block flex-shrink-0 w-0">
+        {/* Logo - Always visible */}
+        <div className="flex-shrink-0">
+          <Logo size="md" className="hover:scale-105 transition-transform duration-300" />
         </div>
 
-        {/* Left side - Empty for now */}
+        {/* Center - Empty for now */}
         <div className="flex-1">
-        </div>
-
-        {/* Center Controls - Moved to right side */}
-        <div className="flex items-center space-x-4 flex-shrink-0">
-          {/* Date Range Selector */}
-          <div className="flex items-center space-x-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-lg p-1 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
-            {dateRangePresets.slice(0, 4).map((preset) => (
-              <Button
-                key={preset.value}
-                variant={selectedDateRange === preset.value ? "default" : "ghost"}
-                size="sm"
-                onClick={() => handleDateRangeChange(preset.value)}
-                className={`h-8 px-3 text-xs font-medium transition-all duration-200 ${
-                  selectedDateRange === preset.value 
-                    ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700' 
-                    : 'hover:bg-white/70 dark:hover:bg-gray-700/70 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {preset.label}
-              </Button>
-            ))}
-          </div>
-
-          {/* Instrument Filter Chips */}
-          <div className="flex items-center space-x-2">
-            {instruments.map((instrument) => (
-              <Button
-                key={instrument.value}
-                variant={selectedInstruments.includes(instrument.value) ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleInstrumentToggle(instrument.value)}
-                className={`h-8 px-3 text-xs font-medium transition-all duration-200 ${
-                  selectedInstruments.includes(instrument.value)
-                    ? 'bg-green-600 text-white shadow-md hover:bg-green-700'
-                    : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {instrument.label}
-                {instrument.count > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-xs bg-white/20 text-white">
-                    {instrument.count}
-                  </Badge>
-                )}
-              </Button>
-            ))}
-          </div>
         </div>
 
         {/* Right Controls - Responsive */}
@@ -198,6 +114,7 @@ export function AppHeader({
           </Button>
         </div>
       </div>
+
     </header>
   )
 }

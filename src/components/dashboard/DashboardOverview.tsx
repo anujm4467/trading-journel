@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,45 +25,73 @@ import { useAnalytics, AnalyticsFilters } from '@/hooks/useAnalytics'
 import { DashboardFilters } from './DashboardFilters'
 
 export function DashboardOverview() {
-  const [timeframe, setTimeframe] = useState('30D')
-  const [filters, setFilters] = useState<AnalyticsFilters>({
+  const [timeframe, setTimeframe] = useState('Monthly')
+  
+  // Initialize filters with useMemo to prevent infinite re-renders
+  const initialFilters: AnalyticsFilters = useMemo(() => ({
     instrumentType: 'ALL'
-  })
+  }), [])
 
-  const { data, loading, error, refetch } = useAnalytics(filters)
+  const { data, loading, error, refetch, setFilters, filters } = useAnalytics(initialFilters)
+
+  // Debug logging
+  console.log('DashboardOverview - filters from useAnalytics:', filters)
+  console.log('DashboardOverview - data loaded:', data ? 'yes' : 'no')
 
   // Update date filters based on timeframe
   useEffect(() => {
+    console.log('DashboardOverview - useEffect triggered for timeframe:', timeframe)
     const now = new Date()
     let dateFrom: string | undefined
 
     switch (timeframe) {
       case 'Today':
-        dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+        // Use date-only string for today (YYYY-MM-DD)
+        dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0]
         break
-      case '7D':
-        dateFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      case 'Weekly':
+        // Get current week's Monday
+        const currentDay = now.getDay() // 0 = Sunday, 1 = Monday, etc.
+        const daysToMonday = currentDay === 0 ? -6 : 1 - currentDay // If Sunday, go back 6 days; otherwise go to Monday
+        const mondayDate = new Date(now)
+        mondayDate.setDate(now.getDate() + daysToMonday)
+        mondayDate.setHours(0, 0, 0, 0)
+        dateFrom = mondayDate.toISOString().split('T')[0]
         break
-      case '30D':
-        dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      case 'Monthly':
+        // Use date-only string for 30 days ago
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+        dateFrom = thirtyDaysAgo.toISOString().split('T')[0]
         break
-      case '90D':
-        dateFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString()
+      case 'Quarterly':
+        // Use date-only string for 90 days ago
+        const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+        dateFrom = ninetyDaysAgo.toISOString().split('T')[0]
+        break
+      case 'Yearly':
+        // Use date-only string for 365 days ago
+        const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+        dateFrom = oneYearAgo.toISOString().split('T')[0]
         break
     }
 
-    setFilters(prev => ({
-      ...prev,
+    // Use date-only string for today as the end date
+    const dateTo = now.toISOString().split('T')[0]
+
+    console.log('DashboardOverview - setting date filters:', { dateFrom, dateTo })
+    setFilters({
       dateFrom,
-      dateTo: now.toISOString()
-    }))
-  }, [timeframe])
+      dateTo
+    })
+  }, [timeframe, setFilters]) // Remove filters dependency to prevent circular dependency
 
   const handleFiltersChange = (newFilters: AnalyticsFilters) => {
+    console.log('DashboardOverview - handleFiltersChange called with:', newFilters)
     setFilters(newFilters)
   }
 
   const handleTimeframeChange = (newTimeframe: string) => {
+    console.log('DashboardOverview - timeframe changing from', timeframe, 'to', newTimeframe)
     setTimeframe(newTimeframe)
   }
 
@@ -146,7 +174,7 @@ export function DashboardOverview() {
           <CardContent className="pt-0">
             <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{data.overview.totalTrades.toLocaleString()}</div>
             <p className="text-sm text-muted-foreground mt-1">
-              {timeframe === 'Today' ? 'Today' : `Last ${timeframe.toLowerCase()}`} trades
+              {timeframe === 'Today' ? 'Today' : `${timeframe} period`} trades
             </p>
           </CardContent>
         </Card>
@@ -212,6 +240,137 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Additional Metrics Cards */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Gross P&L</CardTitle>
+            <TrendingUp className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className={`text-3xl font-bold ${data.overview.totalGrossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              {data.overview.totalGrossPnl >= 0 ? '+' : ''}₹{Math.round(data.overview.totalGrossPnl).toLocaleString()}
+            </div>
+            <div className="flex items-center text-sm mt-1">
+              <span className="text-gray-600 dark:text-gray-400">
+                before charges
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Charges</CardTitle>
+            <BarChart3 className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+              -₹{Math.round(data.overview.totalCharges).toLocaleString()}
+            </div>
+            <div className="flex items-center text-sm mt-1">
+              <span className="text-gray-600 dark:text-gray-400">
+                STT, Exchange, SEBI, Stamp Duty
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Charges</CardTitle>
+            <Activity className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+              ₹{data.overview.totalTrades > 0 ? Math.round(data.overview.totalCharges / data.overview.totalTrades).toLocaleString() : '0'}
+            </div>
+            <div className="flex items-center text-sm mt-1">
+              <span className="text-gray-600 dark:text-gray-400">
+                per trade
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Profit Factor</CardTitle>
+            <Target className="h-4 w-4 text-indigo-500" />
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className={`text-3xl font-bold ${data.overview.profitFactor >= 1 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              {data.overview.profitFactor.toFixed(2)}
+            </div>
+            <div className="flex items-center text-sm mt-1">
+              <span className="text-gray-600 dark:text-gray-400">
+                {data.overview.profitFactor >= 1 ? 'Profitable' : 'Loss-making'} strategy
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charges Breakdown Card */}
+      {data.chargesBreakdown && data.chargesBreakdown.length > 0 && (
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-gray-100">
+              <BarChart3 className="h-5 w-5 text-red-600" />
+              Charges Breakdown
+            </CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">
+              Detailed breakdown of all trading charges
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {data.chargesBreakdown.map((charge, index) => {
+                const chargeTypeLabels: Record<string, string> = {
+                  'BROKERAGE': 'Brokerage',
+                  'STT': 'Securities Transaction Tax',
+                  'EXCHANGE': 'Exchange Charges',
+                  'SEBI': 'SEBI Charges',
+                  'STAMP_DUTY': 'Stamp Duty',
+                  'CUSTOM': 'Custom Charges'
+                }
+                
+                const chargeColors: Record<string, string> = {
+                  'BROKERAGE': 'text-blue-600 dark:text-blue-400',
+                  'STT': 'text-green-600 dark:text-green-400',
+                  'EXCHANGE': 'text-purple-600 dark:text-purple-400',
+                  'SEBI': 'text-orange-600 dark:text-orange-400',
+                  'STAMP_DUTY': 'text-red-600 dark:text-red-400',
+                  'CUSTOM': 'text-gray-600 dark:text-gray-400'
+                }
+
+                return (
+                  <div key={index} className="p-4 rounded-lg bg-gray-50/50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                        {chargeTypeLabels[charge.type] || charge.type}
+                      </h4>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {charge.count} charges
+                      </span>
+                    </div>
+                    <div className={`text-2xl font-bold ${chargeColors[charge.type] || 'text-gray-600 dark:text-gray-400'}`}>
+                      ₹{Math.round(charge.amount).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {data.overview.totalCharges > 0 ? 
+                        `${((charge.amount / data.overview.totalCharges) * 100).toFixed(1)}% of total charges` : 
+                        '0% of total charges'
+                      }
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Charts and Analytics */}
       <div className="grid gap-6 lg:grid-cols-7">
