@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -9,8 +9,7 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
-  DropdownMenuSeparator
+  DropdownMenuCheckboxItem
 } from '@/components/ui/dropdown-menu'
 import { 
   Filter, 
@@ -146,7 +145,7 @@ export function StrategyFilter({
               <DropdownMenuCheckboxItem
                 key={option.value}
                 checked={timeRange === option.value}
-                onCheckedChange={() => onTimeRangeChange(option.value as any)}
+                onCheckedChange={() => onTimeRangeChange(option.value as 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all')}
                 className="flex items-center gap-2 p-2"
               >
                 <span className="text-lg">{option.icon}</span>
@@ -165,7 +164,7 @@ export function StrategyFilter({
                 key={option.value}
                 variant={viewMode === option.value ? "default" : "ghost"}
                 size="sm"
-                onClick={() => onViewModeChange(option.value as any)}
+                onClick={() => onViewModeChange(option.value as 'cards' | 'table' | 'charts')}
                 className={`flex items-center gap-1 h-8 px-3 ${
                   viewMode === option.value 
                     ? 'bg-blue-600 text-white shadow-md' 

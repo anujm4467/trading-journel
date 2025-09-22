@@ -1,10 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -16,7 +13,7 @@ import {
   Bar,
   Cell
 } from 'recharts'
-import { TrendingUp, TrendingDown, Calendar, BarChart3, Activity } from 'lucide-react'
+import { TrendingUp, Calendar, BarChart3, Activity } from 'lucide-react'
 
 interface WeeklyGrowthData {
   week: string
@@ -33,7 +30,7 @@ interface WeeklyGrowthChartProps {
   timeRange: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all'
 }
 
-export function WeeklyGrowthChart({ data, selectedStrategies, timeRange }: WeeklyGrowthChartProps) {
+export function WeeklyGrowthChart({ data, timeRange }: WeeklyGrowthChartProps) {
   const currentWeek = new Date().toISOString().slice(0, 4) + '-W' + getWeekNumber(new Date())
   const currentMonth = new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
   const currentQuarter = `Q${Math.ceil((new Date().getMonth() + 1) / 3)} ${new Date().getFullYear()}`
@@ -44,7 +41,6 @@ export function WeeklyGrowthChart({ data, selectedStrategies, timeRange }: Weekl
   const weeklyGrowth = data.length > 1 ? data[data.length - 1].pnl - data[data.length - 2].pnl : 0
   const avgWeeklyGrowth = data.length > 0 ? totalGrowth / data.length : 0
   const bestWeek = data.reduce((max, week) => week.pnl > max.pnl ? week : max, data[0] || { pnl: 0, week: '' })
-  const worstWeek = data.reduce((min, week) => week.pnl < min.pnl ? week : min, data[0] || { pnl: 0, week: '' })
 
   const getTimeRangeLabel = () => {
     switch (timeRange) {

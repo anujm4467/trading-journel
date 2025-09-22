@@ -153,19 +153,6 @@ const getDefaultExitDate = () => {
   return now
 }
 
-// Helper function to format date for datetime-local input in IST
-const formatDateForInput = (date: Date | undefined) => {
-  if (!date) return ''
-  const dateObj = new Date(date)
-  if (isNaN(dateObj.getTime())) return ''
-  
-  // Convert to IST (UTC+5:30) for display
-  const istOffset = 5.5 * 60 // 5 hours 30 minutes in minutes
-  const utc = dateObj.getTime() + (dateObj.getTimezoneOffset() * 60000)
-  const ist = new Date(utc + (istOffset * 60000))
-  
-  return ist.toISOString().slice(0, 16)
-}
 
 export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = false, initialData, isEdit = false }: TradeFormPageProps) {
   const [currentStep, setCurrentStep] = useState(1)

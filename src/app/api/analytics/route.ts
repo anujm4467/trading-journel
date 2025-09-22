@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../../lib/prisma'
+import { Trade, TradeCharge, HedgeCharge } from '../../../types/trade'
 
 // GET /api/analytics - Get analytics data
 export async function GET(request: NextRequest) {
@@ -481,7 +482,7 @@ function calculateSharpeRatio(returns: number[]): number {
 }
 
 // Helper function to calculate period analysis
-function calculatePeriodAnalysis(trades: any[], timeRange: string) {
+function calculatePeriodAnalysis(trades: Trade[], timeRange: string) {
   if (trades.length === 0) {
     return {
       mostProfitable: null,
@@ -504,13 +505,16 @@ function calculatePeriodAnalysis(trades: any[], timeRange: string) {
 
     const exitDate = new Date(trade.exitDate)
     let periodKey: string
-    let periodLabel: string
     let dateLabel: string
 
     // Calculate net P&L including charges
     const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
-    const tradeCharges = trade.charges?.reduce((sum: number, charge: any) => sum + charge.amount, 0) || 0
-    const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum: number, charge: any) => sum + charge.amount, 0) || 0
+    const tradeCharges = Array.isArray(trade.charges) 
+      ? trade.charges.reduce((sum: number, charge: TradeCharge) => sum + charge.amount, 0)
+      : trade.charges?.total || 0
+    const hedgeCharges = Array.isArray(trade.hedgePosition?.charges)
+      ? trade.hedgePosition.charges.reduce((sum: number, charge: HedgeCharge) => sum + charge.amount, 0)
+      : 0
     const netPnl = grossPnl - (tradeCharges + hedgeCharges)
 
     const isWinning = netPnl > 0
@@ -519,7 +523,6 @@ function calculatePeriodAnalysis(trades: any[], timeRange: string) {
       case 'week':
         // Group by day
         periodKey = exitDate.toISOString().split('T')[0]
-        periodLabel = exitDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
         dateLabel = exitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         break
       case 'month':
@@ -529,20 +532,17 @@ function calculatePeriodAnalysis(trades: any[], timeRange: string) {
         periodKey = weekStart.toISOString().split('T')[0]
         const weekEnd = new Date(weekStart)
         weekEnd.setDate(weekStart.getDate() + 6)
-        periodLabel = `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
         dateLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
         break
       case 'quarter':
       case 'year':
         // Group by month
         periodKey = `${exitDate.getFullYear()}-${String(exitDate.getMonth() + 1).padStart(2, '0')}`
-        periodLabel = exitDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
         dateLabel = exitDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
         break
       default:
         // Default to daily grouping
         periodKey = exitDate.toISOString().split('T')[0]
-        periodLabel = exitDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
         dateLabel = exitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     }
 
@@ -562,7 +562,7 @@ function calculatePeriodAnalysis(trades: any[], timeRange: string) {
   })
 
   // Convert to array and find best/worst periods
-  const periods = Array.from(periodMap.entries()).map(([key, data]) => ({
+  const periods = Array.from(periodMap.entries()).map(([, data]) => ({
     period: data.date,
     pnl: data.pnl,
     trades: data.trades,
@@ -600,7 +600,7 @@ function calculatePeriodAnalysis(trades: any[], timeRange: string) {
 }
 
 // Helper function to calculate weekday analysis
-function calculateWeekdayAnalysis(trades: any[]) {
+function calculateWeekdayAnalysis(trades: Trade[]) {
   const weekdayMap = new Map<string, {
     trades: number
     wins: number
@@ -632,8 +632,12 @@ function calculateWeekdayAnalysis(trades: any[]) {
     
     // Calculate net P&L including charges
     const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
-    const tradeCharges = trade.charges?.reduce((sum: number, charge: any) => sum + charge.amount, 0) || 0
-    const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum: number, charge: any) => sum + charge.amount, 0) || 0
+    const tradeCharges = Array.isArray(trade.charges) 
+      ? trade.charges.reduce((sum: number, charge: TradeCharge) => sum + charge.amount, 0)
+      : trade.charges?.total || 0
+    const hedgeCharges = Array.isArray(trade.hedgePosition?.charges)
+      ? trade.hedgePosition.charges.reduce((sum: number, charge: HedgeCharge) => sum + charge.amount, 0)
+      : 0
     const netPnl = grossPnl - (tradeCharges + hedgeCharges)
 
     const existing = weekdayMap.get(dayName) || {
@@ -658,7 +662,7 @@ function calculateWeekdayAnalysis(trades: any[]) {
   })
 
   // Calculate derived metrics
-  weekdayMap.forEach((data, dayName) => {
+  weekdayMap.forEach((data) => {
     data.avgPnl = data.trades > 0 ? data.totalPnl / data.trades : 0
     data.winRate = data.trades > 0 ? (data.wins / data.trades) * 100 : 0
   })

@@ -83,7 +83,7 @@ export function WeekdayAnalysis({ data }: WeekdayAnalysisProps) {
                     label={{ value: 'Win Rate (%)', angle: -90, position: 'insideLeft' }}
                   />
                   <Tooltip 
-                    content={({ active, payload, label }) => {
+                    content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload
                         return (

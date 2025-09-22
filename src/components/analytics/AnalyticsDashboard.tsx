@@ -8,7 +8,6 @@ import {
   TrendingUp, 
   BarChart3, 
   Target,
-  Download,
   ArrowUpRight,
   ArrowDownRight,
   DollarSign,
@@ -21,10 +20,8 @@ import {
 } from 'lucide-react'
 import { PerformanceChart } from './PerformanceChart'
 import { WinLossChart } from './WinLossChart'
-import { StrategyPerformance } from './StrategyPerformance'
 import { TimeAnalysis } from './TimeAnalysis'
 import { RiskMetrics } from './RiskMetrics'
-import { StrategyFilter } from './StrategyFilter'
 import { AnalyticsFilterPanel } from './AnalyticsFilters'
 import { WeeklyGrowthChart } from './WeeklyGrowthChart'
 import { GraphicalStrategyPerformance } from './GraphicalStrategyPerformance'
@@ -48,7 +45,7 @@ export function AnalyticsDashboard() {
   const handleTimeframeChange = (timeframe: string) => {
     console.log('AnalyticsDashboard - handleTimeframeChange called with:', timeframe)
     setActiveTimeframe(timeframe)
-    setAnalyticsFilters({ timeRange: timeframe as any })
+    setAnalyticsFilters({ timeRange: timeframe as 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' })
   }
 
   const handleFiltersChange = (newFilters: AnalyticsFilters) => {

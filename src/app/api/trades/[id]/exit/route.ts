@@ -148,9 +148,9 @@ export async function POST(
       })
 
       // Handle capital pool transactions if trade has a capital pool
-      if ((existingTrade as any).capitalPoolId) {
+      if ('capitalPoolId' in existingTrade && existingTrade.capitalPoolId) {
         const capitalPool = await tx.capitalPool.findUnique({
-          where: { id: (existingTrade as any).capitalPoolId }
+          where: { id: existingTrade.capitalPoolId as string }
         })
 
         if (capitalPool) {
@@ -164,7 +164,7 @@ export async function POST(
             
             await tx.capitalTransaction.create({
               data: {
-                poolId: (existingTrade as any).capitalPoolId,
+                poolId: existingTrade.capitalPoolId as string,
                 transactionType: pnlTransactionType,
                 amount: pnlAmount,
                 description: `Equity Position Exit: ${existingTrade.symbol} - ${pnlData.netPnl >= 0 ? 'Profit' : 'Loss'}`,
@@ -176,7 +176,7 @@ export async function POST(
 
             // Return invested amount back to capital pool and add P&L
             await tx.capitalPool.update({
-              where: { id: (existingTrade as any).capitalPoolId },
+              where: { id: existingTrade.capitalPoolId as string },
               data: {
                 currentAmount: capitalPool.currentAmount + investedAmount + pnlData.netPnl,
                 totalInvested: capitalPool.totalInvested - investedAmount, // Remove from invested

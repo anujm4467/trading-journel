@@ -15,8 +15,7 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
-  DropdownMenuSeparator
+  DropdownMenuCheckboxItem
 } from '@/components/ui/dropdown-menu'
 import { 
   Filter, 

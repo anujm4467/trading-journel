@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { 
   PieChart, 
   Pie, 
@@ -13,13 +12,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  LineChart,
-  Line,
-  Area,
-  AreaChart,
-  RadialBarChart,
-  RadialBar
+  Tooltip
 } from 'recharts'
 import { 
   TrendingUp, 
@@ -27,10 +20,8 @@ import {
   Target, 
   BarChart3, 
   PieChart as PieChartIcon,
-  Activity,
   DollarSign,
-  Percent,
-  Calendar
+  Percent
 } from 'lucide-react'
 
 interface StrategyData {
@@ -107,7 +98,7 @@ export function GraphicalStrategyPerformance({
       <div className="space-y-6">
         {/* Strategy Overview Cards */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {data.map((strategy, index) => (
+          {data.map((strategy) => (
             <Card 
               key={strategy.strategy}
               className={`backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer ${
@@ -193,7 +184,7 @@ export function GraphicalStrategyPerformance({
             Strategy Performance Table
           </CardTitle>
           <CardDescription>
-            Detailed breakdown of each strategy's performance
+            Detailed breakdown of each strategy&apos;s performance
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -364,7 +355,7 @@ export function GraphicalStrategyPerformance({
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`} // eslint-disable-line @typescript-eslint/no-explicit-any
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
