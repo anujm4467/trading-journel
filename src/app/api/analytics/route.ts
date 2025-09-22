@@ -408,6 +408,9 @@ export async function GET(request: NextRequest) {
     // Calculate period analysis based on timeRange
     const periodAnalysis = calculatePeriodAnalysis(trades, timeRange || 'month')
 
+    // Calculate weekday analysis
+    const weekdayAnalysis = calculateWeekdayAnalysis(trades)
+
     return NextResponse.json({
       overview: {
         totalTrades,
@@ -426,6 +429,7 @@ export async function GET(request: NextRequest) {
       instrumentPerformance: instrumentPerformanceData,
       chargesBreakdown: chargesBreakdownData,
       dailyPnlData,
+      weekdayAnalysis,
       riskData: {
         maxDrawdown: Math.round(maxDrawdown * 100) / 100,
         sharpeRatio: Math.round(sharpeRatio * 100) / 100,
@@ -593,5 +597,93 @@ function calculatePeriodAnalysis(trades: any[], timeRange: string) {
     totalTrades,
     totalPnl
   }
+}
+
+// Helper function to calculate weekday analysis
+function calculateWeekdayAnalysis(trades: any[]) {
+  const weekdayMap = new Map<string, {
+    trades: number
+    wins: number
+    losses: number
+    totalPnl: number
+    avgPnl: number
+    winRate: number
+  }>()
+
+  // Initialize all weekdays
+  const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  weekdays.forEach(day => {
+    weekdayMap.set(day, {
+      trades: 0,
+      wins: 0,
+      losses: 0,
+      totalPnl: 0,
+      avgPnl: 0,
+      winRate: 0
+    })
+  })
+
+  // Process each trade
+  trades.forEach(trade => {
+    if (!trade.exitPrice) return // Skip open trades
+
+    const entryDate = new Date(trade.entryDate)
+    const dayName = entryDate.toLocaleDateString('en-US', { weekday: 'long' })
+    
+    // Calculate net P&L including charges
+    const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
+    const tradeCharges = trade.charges?.reduce((sum: number, charge: any) => sum + charge.amount, 0) || 0
+    const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum: number, charge: any) => sum + charge.amount, 0) || 0
+    const netPnl = grossPnl - (tradeCharges + hedgeCharges)
+
+    const existing = weekdayMap.get(dayName) || {
+      trades: 0,
+      wins: 0,
+      losses: 0,
+      totalPnl: 0,
+      avgPnl: 0,
+      winRate: 0
+    }
+
+    existing.trades += 1
+    existing.totalPnl += netPnl
+    
+    if (netPnl > 0) {
+      existing.wins += 1
+    } else if (netPnl < 0) {
+      existing.losses += 1
+    }
+
+    weekdayMap.set(dayName, existing)
+  })
+
+  // Calculate derived metrics
+  weekdayMap.forEach((data, dayName) => {
+    data.avgPnl = data.trades > 0 ? data.totalPnl / data.trades : 0
+    data.winRate = data.trades > 0 ? (data.wins / data.trades) * 100 : 0
+  })
+
+  // Convert to array and sort by day order
+  const weekdayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  return weekdayOrder.map(dayName => {
+    const data = weekdayMap.get(dayName) || {
+      trades: 0,
+      wins: 0,
+      losses: 0,
+      totalPnl: 0,
+      avgPnl: 0,
+      winRate: 0
+    }
+    
+    return {
+      day: dayName,
+      trades: data.trades,
+      wins: data.wins,
+      losses: data.losses,
+      totalPnl: Math.round(data.totalPnl * 100) / 100,
+      avgPnl: Math.round(data.avgPnl * 100) / 100,
+      winRate: Math.round(data.winRate * 100) / 100
+    }
+  })
 }
 

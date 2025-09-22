@@ -29,6 +29,7 @@ import { AnalyticsFilterPanel } from './AnalyticsFilters'
 import { WeeklyGrowthChart } from './WeeklyGrowthChart'
 import { GraphicalStrategyPerformance } from './GraphicalStrategyPerformance'
 import { PeriodAnalysis } from './PeriodAnalysis'
+import { WeekdayAnalysis } from './WeekdayAnalysis'
 import { useAnalytics, AnalyticsFilters, generateWeeklyGrowthData } from '@/hooks/useAnalytics'
 
 export function AnalyticsDashboard() {
@@ -439,6 +440,7 @@ export function AnalyticsDashboard() {
         </TabsContent>
 
         <TabsContent value="time" className="space-y-6">
+          <WeekdayAnalysis data={data.weekdayAnalysis || []} />
           <TimeAnalysis data={data.timeAnalysis || { dayOfWeek: {}, timeOfDay: {} }} />
         </TabsContent>
 

@@ -94,6 +94,15 @@ export interface AnalyticsData {
     totalTrades: number
     totalPnl: number
   }
+  weekdayAnalysis?: Array<{
+    day: string
+    trades: number
+    wins: number
+    losses: number
+    totalPnl: number
+    avgPnl: number
+    winRate: number
+  }>
 }
 
 export interface UseAnalyticsReturn {
@@ -192,7 +201,8 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
             sharpeRatio: analyticsData.riskData?.sharpeRatio || 0,
             avgRiskReward: analyticsData.riskData?.avgRiskReward || 0
           },
-          periodAnalysis: analyticsData.periodAnalysis
+          periodAnalysis: analyticsData.periodAnalysis,
+          weekdayAnalysis: analyticsData.weekdayAnalysis || []
         }
 
         setData(transformedData)
