@@ -174,27 +174,25 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
           return
         }
 
-        // Apply time range filtering
-        const filteredData = applyTimeRangeFilter(analyticsData, filters.timeRange || 'all')
-        
         // Transform the data to match our expected format
+        // Note: The API already handles time range filtering, so we don't need to filter again
         const transformedData: AnalyticsData = {
-          overview: filteredData.overview,
-          strategyPerformance: filteredData.strategyPerformance || [],
-          instrumentPerformance: filteredData.instrumentPerformance || [],
-          chargesBreakdown: filteredData.chargesBreakdown || [],
-          dailyPnlData: filteredData.dailyPnlData || [],
-          monthlyPerformanceData: generateMonthlyData(filteredData.dailyPnlData || []),
-          weeklyPerformanceData: generateWeeklyData(filteredData.dailyPnlData || []),
+          overview: analyticsData.overview,
+          strategyPerformance: analyticsData.strategyPerformance || [],
+          instrumentPerformance: analyticsData.instrumentPerformance || [],
+          chargesBreakdown: analyticsData.chargesBreakdown || [],
+          dailyPnlData: analyticsData.dailyPnlData || [],
+          monthlyPerformanceData: generateMonthlyData(analyticsData.dailyPnlData || []),
+          weeklyPerformanceData: generateWeeklyData(analyticsData.dailyPnlData || []),
           recentTrades: await getRecentTrades(filters),
-          strategyDistribution: generateStrategyDistribution(filteredData.strategyPerformance || []),
-          timeAnalysis: generateTimeAnalysis(filteredData.dailyPnlData || []),
+          strategyDistribution: generateStrategyDistribution(analyticsData.strategyPerformance || []),
+          timeAnalysis: generateTimeAnalysis(analyticsData.dailyPnlData || []),
           riskData: {
-            maxDrawdown: filteredData.riskData?.maxDrawdown || 0,
-            sharpeRatio: filteredData.riskData?.sharpeRatio || 0,
-            avgRiskReward: filteredData.riskData?.avgRiskReward || 0
+            maxDrawdown: analyticsData.riskData?.maxDrawdown || 0,
+            sharpeRatio: analyticsData.riskData?.sharpeRatio || 0,
+            avgRiskReward: analyticsData.riskData?.avgRiskReward || 0
           },
-          periodAnalysis: filteredData.periodAnalysis
+          periodAnalysis: analyticsData.periodAnalysis
         }
 
         setData(transformedData)
@@ -388,62 +386,6 @@ function getTimeAgo(dateString: string): string {
   }
 }
 
-// Helper function to apply time range filtering
-function applyTimeRangeFilter(data: any, timeRange: string): any {
-  if (timeRange === 'all') return data
-
-  const now = new Date()
-  let startDate: Date
-
-  switch (timeRange) {
-    case 'today':
-      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      break
-    case 'week':
-      startDate = new Date(now)
-      startDate.setDate(now.getDate() - 7)
-      break
-    case 'month':
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-      break
-    case 'quarter':
-      const quarter = Math.floor(now.getMonth() / 3)
-      startDate = new Date(now.getFullYear(), quarter * 3, 1)
-      break
-    case 'year':
-      startDate = new Date(now.getFullYear(), 0, 1)
-      break
-    default:
-      return data
-  }
-
-  // Filter daily P&L data
-  const filteredDailyData = data.dailyPnlData?.filter((day: any) => {
-    const dayDate = new Date(day.date)
-    return dayDate >= startDate && dayDate <= now
-  }) || []
-
-  // Recalculate overview based on filtered data
-  const totalTrades = filteredDailyData.length
-  const totalPnl = filteredDailyData.reduce((sum: number, day: any) => sum + (day.pnl || 0), 0)
-  const winningDays = filteredDailyData.filter((day: any) => (day.pnl || 0) > 0).length
-  const losingDays = filteredDailyData.filter((day: any) => (day.pnl || 0) < 0).length
-  const winRate = totalTrades > 0 ? (winningDays / totalTrades) * 100 : 0
-
-  return {
-    ...data,
-    dailyPnlData: filteredDailyData,
-    overview: {
-      ...data.overview,
-      totalTrades,
-      totalNetPnl: totalPnl,
-      totalGrossPnl: totalPnl, // Simplified for now
-      winningTrades: winningDays,
-      losingTrades: losingDays,
-      winRate
-    }
-  }
-}
 
 // Helper function to generate weekly growth data
 export function generateWeeklyGrowthData(dailyData: Array<{ date: string; pnl: number }>): Array<{

@@ -59,9 +59,9 @@ export function DashboardOverview() {
         dateFrom = mondayDate.toISOString().split('T')[0]
         break
       case 'Monthly':
-        // Use date-only string for 30 days ago
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-        dateFrom = thirtyDaysAgo.toISOString().split('T')[0]
+        // Use date-only string for start of current month
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        dateFrom = startOfMonth.toISOString().split('T')[0]
         break
       case 'Quarterly':
         // Use date-only string for 90 days ago
