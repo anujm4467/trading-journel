@@ -7,17 +7,17 @@ import { Button } from '@/components/ui/button'
 import { 
   TrendingUp, 
   BarChart3, 
-  Activity,
   Target,
   Download,
   ArrowUpRight,
   ArrowDownRight,
   DollarSign,
-  PieChart,
   Clock,
   Shield,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Activity,
+  PieChart
 } from 'lucide-react'
 import { PerformanceChart } from './PerformanceChart'
 import { WinLossChart } from './WinLossChart'
@@ -25,19 +25,49 @@ import { StrategyPerformance } from './StrategyPerformance'
 import { TimeAnalysis } from './TimeAnalysis'
 import { RiskMetrics } from './RiskMetrics'
 import { StrategyFilter } from './StrategyFilter'
+import { AnalyticsFilterPanel } from './AnalyticsFilters'
 import { WeeklyGrowthChart } from './WeeklyGrowthChart'
 import { GraphicalStrategyPerformance } from './GraphicalStrategyPerformance'
+import { PeriodAnalysis } from './PeriodAnalysis'
 import { useAnalytics, AnalyticsFilters, generateWeeklyGrowthData } from '@/hooks/useAnalytics'
 
 export function AnalyticsDashboard() {
   const [filters, setFilters] = useState<AnalyticsFilters>({
-    instrumentType: 'ALL',
-    timeRange: 'all',
+    instrumentType: 'OPTIONS', // Default to Options
+    timeRange: 'month', // Default to current month
     selectedStrategies: []
   })
-  const [viewMode, setViewMode] = useState<'cards' | 'charts' | 'table'>('charts')
+  const [activeTimeframe, setActiveTimeframe] = useState('month') // Default to current month
 
-  const { data, loading, error, refetch } = useAnalytics(filters)
+  console.log('AnalyticsDashboard - Initial filters:', filters)
+  console.log('AnalyticsDashboard - Initial activeTimeframe:', activeTimeframe)
+
+  const { data, loading, error, refetch, setFilters: setAnalyticsFilters } = useAnalytics(filters)
+
+  const handleTimeframeChange = (timeframe: string) => {
+    console.log('AnalyticsDashboard - handleTimeframeChange called with:', timeframe)
+    setActiveTimeframe(timeframe)
+    setAnalyticsFilters({ timeRange: timeframe as any })
+  }
+
+  const handleFiltersChange = (newFilters: AnalyticsFilters) => {
+    console.log('AnalyticsDashboard - handleFiltersChange called with:', newFilters)
+    setFilters(prev => {
+      const updated = { ...prev, ...newFilters }
+      console.log('AnalyticsDashboard - updated filters:', updated)
+      return updated
+    })
+    setAnalyticsFilters(newFilters)
+  }
+
+  const handleExport = () => {
+    // TODO: Implement export functionality
+    console.log('Export analytics data')
+  }
+
+  const handleRefresh = () => {
+    refetch()
+  }
 
   if (loading) {
     return (
@@ -85,21 +115,17 @@ export function AnalyticsDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
-          <p className="text-muted-foreground">
-            Deep dive into your trading performance and patterns
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export Report
-          </Button>
-        </div>
-      </div>
+      {/* Enhanced Filter System */}
+      <AnalyticsFilterPanel
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        onTimeframeChange={handleTimeframeChange}
+        activeTimeframe={activeTimeframe}
+        onExport={handleExport}
+        onRefresh={handleRefresh}
+        strategies={data?.strategyPerformance?.map(s => s.strategy) || []}
+        isLoading={loading}
+      />
 
       {/* Key Metrics Overview */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -116,11 +142,11 @@ export function AnalyticsDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-3xl font-bold mb-1 ${data.overview.totalNetPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-3xl font-bold mb-1 ${data.overview.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {data.overview.totalNetPnl >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl).toLocaleString()}
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className={`font-medium ${data.overview.totalNetPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`font-medium ${data.overview.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {data.overview.winRate.toFixed(1)}% win rate
               </span>
             </div>
@@ -176,20 +202,20 @@ export function AnalyticsDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="backdrop-blur-sm bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200/50 dark:border-orange-700/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+        <Card className="backdrop-blur-sm bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-200/50 dark:border-red-700/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300">Total Charges</CardTitle>
+            <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300">Total Charges</CardTitle>
             <div className="flex items-center gap-1">
-              <Activity className="h-4 w-4 text-orange-600" />
-              <ArrowDownRight className="h-3 w-3 text-orange-600" />
+              <Activity className="h-4 w-4 text-red-600" />
+              <ArrowDownRight className="h-3 w-3 text-red-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-600 mb-1">
+            <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-1">
               ₹{Math.round(data.overview.totalCharges).toLocaleString()}
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-orange-600 font-medium">
+              <span className="text-red-600 dark:text-red-400 font-medium">
                 {data.overview.totalGrossPnl > 0 ? 
                   `${((data.overview.totalCharges / data.overview.totalGrossPnl) * 100).toFixed(1)}%` : 
                   '0%'
@@ -204,43 +230,59 @@ export function AnalyticsDashboard() {
         </Card>
       </div>
 
-      {/* Strategy Filter */}
-      <StrategyFilter
-        strategies={data.strategyPerformance?.map(s => s.strategy) || []}
-        selectedStrategies={filters.selectedStrategies || []}
-        onStrategyChange={(strategies) => setFilters(prev => ({ ...prev, selectedStrategies: strategies }))}
-        timeRange={filters.timeRange || 'all'}
-        onTimeRangeChange={(range) => setFilters(prev => ({ ...prev, timeRange: range }))}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-      />
+      {/* Period Analysis */}
+      {data.periodAnalysis && (
+        <PeriodAnalysis 
+          timeframe={filters.timeRange || 'month'}
+          data={data.periodAnalysis}
+        />
+      )}
 
       {/* Main Analytics Tabs */}
       <Tabs defaultValue="performance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm p-1 rounded-lg">
-          <TabsTrigger value="performance" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-lg">
-            <BarChart3 className="h-4 w-4" />
-            Performance
-          </TabsTrigger>
-          <TabsTrigger value="strategies" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-lg">
-            <PieChart className="h-4 w-4" />
-            Strategies
-          </TabsTrigger>
-          <TabsTrigger value="time" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-lg">
-            <Clock className="h-4 w-4" />
-            Time Analysis
-          </TabsTrigger>
-          <TabsTrigger value="risk" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-lg">
-            <Shield className="h-4 w-4" />
-            Risk Metrics
-          </TabsTrigger>
-          <TabsTrigger value="comparison" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-lg">
-            <TrendingUp className="h-4 w-4" />
-            Comparison
-          </TabsTrigger>
-        </TabsList>
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-white/20 shadow-xl">
+          <CardContent className="p-2">
+            <TabsList className="grid w-full grid-cols-5 bg-gray-100/50 dark:bg-gray-700/50 backdrop-blur-sm p-1 rounded-lg">
+              <TabsTrigger 
+                value="performance" 
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-blue-600 transition-all duration-200"
+              >
+                <BarChart3 className="h-4 w-4" />
+                Performance
+              </TabsTrigger>
+              <TabsTrigger 
+                value="strategies" 
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-purple-600 transition-all duration-200"
+              >
+                <PieChart className="h-4 w-4" />
+                Strategies
+              </TabsTrigger>
+              <TabsTrigger 
+                value="time" 
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-green-600 transition-all duration-200"
+              >
+                <Clock className="h-4 w-4" />
+                Time Analysis
+              </TabsTrigger>
+              <TabsTrigger 
+                value="risk" 
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-red-600 transition-all duration-200"
+              >
+                <Shield className="h-4 w-4" />
+                Risk Metrics
+              </TabsTrigger>
+              <TabsTrigger 
+                value="comparison" 
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-orange-600 transition-all duration-200"
+              >
+                <TrendingUp className="h-4 w-4" />
+                Comparison
+              </TabsTrigger>
+            </TabsList>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="performance" className="space-y-6">
+        <TabsContent value="performance" className="space-y-8">
           {/* Weekly Growth Analysis */}
           <WeeklyGrowthChart 
             data={generateWeeklyGrowthData(data.dailyPnlData || [])}
@@ -248,16 +290,18 @@ export function AnalyticsDashboard() {
             timeRange={filters.timeRange || 'all'}
           />
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-white/20 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
-                  P&L Over Time
+          <div className="grid gap-8 md:grid-cols-2">
+            <Card className="backdrop-blur-sm bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200/50 dark:border-blue-700/50 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-gray-900 dark:text-gray-100">P&L Over Time</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Your trading performance over time</div>
+                  </div>
                 </CardTitle>
-                <CardDescription>
-                  Your trading performance over time
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 {data.monthlyPerformanceData && data.monthlyPerformanceData.length > 0 ? (
@@ -269,23 +313,28 @@ export function AnalyticsDashboard() {
                 ) : (
                   <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
                     <div className="text-center">
-                      <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No performance data available</p>
+                      <div className="p-4 rounded-full bg-gray-100 dark:bg-gray-800 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                        <TrendingUp className="h-8 w-8 opacity-50" />
+                      </div>
+                      <p className="text-sm font-medium">No performance data available</p>
+                      <p className="text-xs text-gray-400 mt-1">Start trading to see your performance chart</p>
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-white/20 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChart className="h-5 w-5 text-blue-600" />
-                  Win/Loss Distribution
+            <Card className="backdrop-blur-sm bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200/50 dark:border-purple-700/50 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                    <PieChart className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-gray-900 dark:text-gray-100">Win/Loss Distribution</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Distribution of your winning and losing trades</div>
+                  </div>
                 </CardTitle>
-                <CardDescription>
-                  Distribution of your winning and losing trades
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <WinLossChart 
@@ -297,62 +346,71 @@ export function AnalyticsDashboard() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-3">
-            <Card className="backdrop-blur-sm bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200/50 dark:border-green-700/50 shadow-xl hover:shadow-2xl transition-all duration-300">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2 text-green-700 dark:text-green-300">
-                  <ArrowUpRight className="h-5 w-5" />
-                  Average Win
+            <Card className="backdrop-blur-sm bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200/50 dark:border-green-700/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                    <ArrowUpRight className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-green-700 dark:text-green-300">Average Win</div>
+                    <div className="text-sm text-green-600 dark:text-green-400">Per winning trade</div>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
                   +₹{Math.round(data.overview.averageWin).toLocaleString()}
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Per winning trade
-                </p>
-                <div className="mt-2 text-xs text-green-600 font-medium">
-                  {data.overview.winningTrades} winning trades
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Winning trades</span>
+                  <span className="text-green-600 font-medium">{data.overview.winningTrades}</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="backdrop-blur-sm bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-red-200/50 dark:border-red-700/50 shadow-xl hover:shadow-2xl transition-all duration-300">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2 text-red-700 dark:text-red-300">
-                  <ArrowDownRight className="h-5 w-5" />
-                  Average Loss
+            <Card className="backdrop-blur-sm bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-200/50 dark:border-red-700/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
+                    <ArrowDownRight className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-red-700 dark:text-red-300">Average Loss</div>
+                    <div className="text-sm text-red-600 dark:text-red-400">Per losing trade</div>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">
                   -₹{Math.round(Math.abs(data.overview.averageLoss)).toLocaleString()}
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Per losing trade
-                </p>
-                <div className="mt-2 text-xs text-red-600 font-medium">
-                  {data.overview.losingTrades} losing trades
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Losing trades</span>
+                  <span className="text-red-600 font-medium">{data.overview.losingTrades}</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="backdrop-blur-sm bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200/50 dark:border-blue-700/50 shadow-xl hover:shadow-2xl transition-all duration-300">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2 text-blue-700 dark:text-blue-300">
-                  <DollarSign className="h-5 w-5" />
-                  Gross P&L
+            <Card className="backdrop-blur-sm bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200/50 dark:border-blue-700/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                    <DollarSign className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-blue-700 dark:text-blue-300">Gross P&L</div>
+                    <div className="text-sm text-blue-600 dark:text-blue-400">Before charges</div>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className={`text-3xl font-bold mb-2 ${data.overview.totalGrossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {data.overview.totalGrossPnl >= 0 ? '+' : ''}₹{Math.round(data.overview.totalGrossPnl).toLocaleString()}
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Before charges
-                </p>
-                <div className="mt-2 text-xs text-blue-600 font-medium">
-                  {data.overview.totalTrades} total trades
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Total trades</span>
+                  <span className="text-blue-600 font-medium">{data.overview.totalTrades}</span>
                 </div>
               </CardContent>
             </Card>
@@ -377,7 +435,6 @@ export function AnalyticsDashboard() {
                 }))
               }
             }}
-            viewMode={viewMode}
           />
         </TabsContent>
 

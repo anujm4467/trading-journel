@@ -76,6 +76,24 @@ export interface AnalyticsData {
     sharpeRatio: number
     avgRiskReward: number
   }
+  periodAnalysis?: {
+    mostProfitable: {
+      period: string
+      pnl: number
+      trades: number
+      winRate: number
+      date: string
+    } | null
+    mostLosing: {
+      period: string
+      pnl: number
+      trades: number
+      winRate: number
+      date: string
+    } | null
+    totalTrades: number
+    totalPnl: number
+  }
 }
 
 export interface UseAnalyticsReturn {
@@ -92,12 +110,11 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<AnalyticsFilters>({
-    timeRange: 'all',
+    timeRange: 'month', // Default to current month
+    instrumentType: 'OPTIONS', // Default to Options
     selectedStrategies: [],
     ...initialFilters
   })
-
-  // No need for useEffect - filters are already initialized with initialFilters
 
   const handleSetFilters = useCallback((newFilters: Partial<AnalyticsFilters>) => {
     console.log('useAnalytics - handleSetFilters called with:', newFilters)
@@ -120,7 +137,9 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
           dateFrom: filters.dateFrom,
           dateTo: filters.dateTo,
           instrumentType: filters.instrumentType,
-          strategy: filters.strategy
+          strategy: filters.strategy,
+          selectedStrategies: filters.selectedStrategies,
+          timeRange: filters.timeRange
         })
         setLoading(true)
         setError(null)
@@ -133,10 +152,15 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
           params.append('instrumentType', filters.instrumentType)
         }
         if (filters.strategy) params.append('strategy', filters.strategy)
+        if (filters.selectedStrategies && filters.selectedStrategies.length > 0) {
+          params.append('selectedStrategies', JSON.stringify(filters.selectedStrategies))
+        }
+        if (filters.timeRange) params.append('timeRange', filters.timeRange)
 
         const url = `/api/analytics?${params.toString()}`
         console.log('useAnalytics - making API call to:', url)
         console.log('useAnalytics - query params:', params.toString())
+        console.log('useAnalytics - full URL:', url)
         const response = await fetch(url)
         
         if (!response.ok) {
@@ -169,7 +193,8 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
             maxDrawdown: filteredData.riskData?.maxDrawdown || 0,
             sharpeRatio: filteredData.riskData?.sharpeRatio || 0,
             avgRiskReward: filteredData.riskData?.avgRiskReward || 0
-          }
+          },
+          periodAnalysis: filteredData.periodAnalysis
         }
 
         setData(transformedData)

@@ -413,10 +413,11 @@ export function DashboardOverview() {
                     <Line 
                       type="monotone" 
                       dataKey="pnl" 
-                      stroke="#10b981" 
+                      stroke="var(--profit-hex)" 
                       strokeWidth={3}
-                      dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
+                      dot={{ fill: 'var(--profit-hex)', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: 'var(--profit-hex)', strokeWidth: 2 }}
+                      className="drop-shadow-sm"
                     />
                   </RechartsLineChart>
                 </ResponsiveContainer>

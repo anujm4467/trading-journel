@@ -9,17 +9,52 @@ export async function GET(request: NextRequest) {
     const dateTo = searchParams.get('dateTo')
     const strategy = searchParams.get('strategy')
     const instrumentType = searchParams.get('instrumentType')
+    const selectedStrategies = searchParams.get('selectedStrategies')
+    const timeRange = searchParams.get('timeRange')
 
     console.log('Analytics API - Received request with params:', {
       dateFrom,
       dateTo,
       strategy,
-      instrumentType
+      instrumentType,
+      selectedStrategies,
+      timeRange
     })
 
     // Build date filter - normalize dates to start/end of day for proper filtering
     const dateFilter: Record<string, Date> = {}
-    if (dateFrom) {
+    
+    // Handle timeRange parameter
+    if (timeRange && timeRange !== 'all') {
+      const now = new Date()
+      let startDate: Date
+      
+      switch (timeRange) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          break
+        case 'week':
+          startDate = new Date(now)
+          startDate.setDate(now.getDate() - 7)
+          break
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+          break
+        case 'quarter':
+          const quarter = Math.floor(now.getMonth() / 3)
+          startDate = new Date(now.getFullYear(), quarter * 3, 1)
+          break
+        case 'year':
+          startDate = new Date(now.getFullYear(), 0, 1)
+          break
+        default:
+          startDate = new Date(0) // All time
+      }
+      
+      startDate.setHours(0, 0, 0, 0)
+      dateFilter.gte = startDate
+      dateFilter.lte = now
+    } else if (dateFrom) {
       const fromDate = new Date(dateFrom)
       // Set to start of day (00:00:00)
       fromDate.setHours(0, 0, 0, 0)
@@ -37,7 +72,24 @@ export async function GET(request: NextRequest) {
     if (Object.keys(dateFilter).length > 0) {
       where.entryDate = dateFilter
     }
-    if (strategy) {
+    
+    // Handle strategy filtering - support both single strategy and multiple selected strategies
+    if (selectedStrategies) {
+      try {
+        const strategiesArray = JSON.parse(selectedStrategies)
+        if (Array.isArray(strategiesArray) && strategiesArray.length > 0) {
+          where.strategyTags = {
+            some: {
+              strategyTag: {
+                name: { in: strategiesArray }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing selectedStrategies:', error)
+      }
+    } else if (strategy) {
       where.strategyTags = {
         some: {
           strategyTag: {
@@ -46,7 +98,9 @@ export async function GET(request: NextRequest) {
         }
       }
     }
-    if (instrumentType) {
+    
+    // Handle instrument type filtering
+    if (instrumentType && instrumentType !== 'ALL') {
       where.instrument = instrumentType
     }
 
@@ -155,14 +209,17 @@ export async function GET(request: NextRequest) {
 
     const profitFactor = totalLosses > 0 ? totalWins / totalLosses : 0
 
-    // Calculate strategy performance
+    // Calculate strategy performance - only if we have strategy filters or want all strategies
+    const strategyPerformanceWhere = { ...where }
+    if (!selectedStrategies && !strategy) {
+      // If no strategy filter, only get trades that have strategy tags
+      strategyPerformanceWhere.strategyTags = {
+        some: {}
+      }
+    }
+    
     const strategyPerformance = await prisma.trade.findMany({
-      where: {
-        ...where,
-        strategyTags: {
-          some: {}
-        }
-      },
+      where: strategyPerformanceWhere,
       include: {
         strategyTags: {
           include: {
@@ -337,6 +394,20 @@ export async function GET(request: NextRequest) {
       count: data.count
     }))
 
+    // Calculate additional metrics
+    const totalTradesWithExit = trades.filter(trade => trade.exitPrice).length
+    const openTrades = totalTrades - totalTradesWithExit
+    
+    // Calculate risk metrics
+    const dailyReturns = dailyPnlData.map(day => day.pnl)
+    const maxDrawdown = calculateMaxDrawdown(dailyReturns)
+    const sharpeRatio = calculateSharpeRatio(dailyReturns)
+    const avgRiskReward = winningTrades > 0 && losingTrades > 0 ? 
+      Math.abs(averageWin / averageLoss) : 0
+
+    // Calculate period analysis based on timeRange
+    const periodAnalysis = calculatePeriodAnalysis(trades, timeRange || 'month')
+
     return NextResponse.json({
       overview: {
         totalTrades,
@@ -348,12 +419,19 @@ export async function GET(request: NextRequest) {
         totalNetPnl: Math.round(totalNetPnl * 100) / 100,
         averageWin: Math.round(averageWin * 100) / 100,
         averageLoss: Math.round(averageLoss * 100) / 100,
-        profitFactor: Math.round(profitFactor * 100) / 100
+        profitFactor: Math.round(profitFactor * 100) / 100,
+        openTrades
       },
       strategyPerformance: strategyPerformanceData,
       instrumentPerformance: instrumentPerformanceData,
       chargesBreakdown: chargesBreakdownData,
-      dailyPnlData
+      dailyPnlData,
+      riskData: {
+        maxDrawdown: Math.round(maxDrawdown * 100) / 100,
+        sharpeRatio: Math.round(sharpeRatio * 100) / 100,
+        avgRiskReward: Math.round(avgRiskReward * 100) / 100
+      },
+      periodAnalysis
     })
   } catch (error) {
     console.error('Error fetching analytics:', error)
@@ -361,6 +439,159 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to fetch analytics data' },
       { status: 500 }
     )
+  }
+}
+
+// Helper function to calculate maximum drawdown
+function calculateMaxDrawdown(returns: number[]): number {
+  if (returns.length === 0) return 0
+  
+  let peak = 0
+  let maxDrawdown = 0
+  let runningSum = 0
+  
+  for (const return_ of returns) {
+    runningSum += return_
+    if (runningSum > peak) {
+      peak = runningSum
+    }
+    const drawdown = peak - runningSum
+    if (drawdown > maxDrawdown) {
+      maxDrawdown = drawdown
+    }
+  }
+  
+  return maxDrawdown
+}
+
+// Helper function to calculate Sharpe ratio
+function calculateSharpeRatio(returns: number[]): number {
+  if (returns.length === 0) return 0
+  
+  const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length
+  const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length
+  const stdDev = Math.sqrt(variance)
+  
+  // Assuming risk-free rate of 0 for simplicity
+  return stdDev > 0 ? mean / stdDev : 0
+}
+
+// Helper function to calculate period analysis
+function calculatePeriodAnalysis(trades: any[], timeRange: string) {
+  if (trades.length === 0) {
+    return {
+      mostProfitable: null,
+      mostLosing: null,
+      totalTrades: 0,
+      totalPnl: 0
+    }
+  }
+
+  const periodMap = new Map<string, {
+    pnl: number
+    trades: number
+    winningTrades: number
+    date: string
+  }>()
+
+  // Group trades by period based on timeRange
+  trades.forEach(trade => {
+    if (!trade.exitDate || !trade.exitPrice) return
+
+    const exitDate = new Date(trade.exitDate)
+    let periodKey: string
+    let periodLabel: string
+    let dateLabel: string
+
+    // Calculate net P&L including charges
+    const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
+    const tradeCharges = trade.charges?.reduce((sum: number, charge: any) => sum + charge.amount, 0) || 0
+    const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum: number, charge: any) => sum + charge.amount, 0) || 0
+    const netPnl = grossPnl - (tradeCharges + hedgeCharges)
+
+    const isWinning = netPnl > 0
+
+    switch (timeRange) {
+      case 'week':
+        // Group by day
+        periodKey = exitDate.toISOString().split('T')[0]
+        periodLabel = exitDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+        dateLabel = exitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        break
+      case 'month':
+        // Group by week
+        const weekStart = new Date(exitDate)
+        weekStart.setDate(exitDate.getDate() - exitDate.getDay())
+        periodKey = weekStart.toISOString().split('T')[0]
+        const weekEnd = new Date(weekStart)
+        weekEnd.setDate(weekStart.getDate() + 6)
+        periodLabel = `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+        dateLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+        break
+      case 'quarter':
+      case 'year':
+        // Group by month
+        periodKey = `${exitDate.getFullYear()}-${String(exitDate.getMonth() + 1).padStart(2, '0')}`
+        periodLabel = exitDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+        dateLabel = exitDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        break
+      default:
+        // Default to daily grouping
+        periodKey = exitDate.toISOString().split('T')[0]
+        periodLabel = exitDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+        dateLabel = exitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    }
+
+    const existing = periodMap.get(periodKey) || {
+      pnl: 0,
+      trades: 0,
+      winningTrades: 0,
+      date: dateLabel
+    }
+
+    existing.pnl += netPnl
+    existing.trades += 1
+    if (isWinning) existing.winningTrades += 1
+    existing.date = dateLabel
+
+    periodMap.set(periodKey, existing)
+  })
+
+  // Convert to array and find best/worst periods
+  const periods = Array.from(periodMap.entries()).map(([key, data]) => ({
+    period: data.date,
+    pnl: data.pnl,
+    trades: data.trades,
+    winRate: data.trades > 0 ? (data.winningTrades / data.trades) * 100 : 0,
+    date: data.date
+  }))
+
+  if (periods.length === 0) {
+    return {
+      mostProfitable: null,
+      mostLosing: null,
+      totalTrades: 0,
+      totalPnl: 0
+    }
+  }
+
+  // Find most profitable and most losing periods
+  const mostProfitable = periods.reduce((best, current) => 
+    current.pnl > best.pnl ? current : best
+  )
+
+  const mostLosing = periods.reduce((worst, current) => 
+    current.pnl < worst.pnl ? current : worst
+  )
+
+  const totalTrades = periods.reduce((sum, period) => sum + period.trades, 0)
+  const totalPnl = periods.reduce((sum, period) => sum + period.pnl, 0)
+
+  return {
+    mostProfitable: mostProfitable.pnl > 0 ? mostProfitable : null,
+    mostLosing: mostLosing.pnl < 0 ? mostLosing : null,
+    totalTrades,
+    totalPnl
   }
 }
 

@@ -50,14 +50,12 @@ interface GraphicalStrategyPerformanceProps {
   data: StrategyData[]
   selectedStrategies: string[]
   onStrategySelect: (strategy: string) => void
-  viewMode: 'charts' | 'cards' | 'table'
 }
 
 export function GraphicalStrategyPerformance({ 
   data, 
   selectedStrategies, 
-  onStrategySelect, 
-  viewMode 
+  onStrategySelect
 }: GraphicalStrategyPerformanceProps) {
   const totalTrades = data.reduce((sum, strategy) => sum + strategy.trades, 0)
   const totalPnl = data.reduce((sum, strategy) => sum + strategy.pnl, 0)
@@ -80,7 +78,16 @@ export function GraphicalStrategyPerformance({
     avgPnl: strategy.avgPnl
   }))
 
-  const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4', '#84cc16', '#f97316']
+  const COLORS = [
+    'var(--profit-hex)', // Green for profit
+    '#3b82f6', // Blue
+    '#8b5cf6', // Purple
+    '#f59e0b', // Amber
+    'var(--loss-hex)', // Red for loss
+    '#06b6d4', // Cyan
+    '#84cc16', // Lime
+    '#f97316'  // Orange
+  ]
 
   function getStrategyColor(index: number): string {
     return COLORS[index % COLORS.length]
@@ -94,7 +101,8 @@ export function GraphicalStrategyPerformance({
     return `${value.toFixed(1)}%`
   }
 
-  if (viewMode === 'cards') {
+  // Removed cards view - showing charts by default
+  if (false) {
     return (
       <div className="space-y-6">
         {/* Strategy Overview Cards */}
@@ -175,7 +183,8 @@ export function GraphicalStrategyPerformance({
     )
   }
 
-  if (viewMode === 'table') {
+  // Removed table view - showing charts by default
+  if (false) {
     return (
       <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-white/20 shadow-xl">
         <CardHeader>
@@ -551,7 +560,8 @@ export function GraphicalStrategyPerformance({
                   {barData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={entry.winRate >= 60 ? '#10b981' : entry.winRate >= 40 ? '#f59e0b' : '#ef4444'} 
+                      fill={entry.winRate >= 60 ? 'var(--profit-hex)' : entry.winRate >= 40 ? '#f59e0b' : 'var(--loss-hex)'} 
+                      className="drop-shadow-sm"
                     />
                   ))}
                 </Bar>

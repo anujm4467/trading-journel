@@ -76,8 +76,11 @@
   
   /* Trading Specific Colors */
   --profit: oklch(0.6 0.15 140);        /* Green for profits */
+  --profit-hex: #10b981;                 /* Green hex for charts */
   --loss: oklch(0.6 0.2 15);            /* Red for losses */
+  --loss-hex: #ef4444;                   /* Red hex for charts */
   --neutral: oklch(0.552 0.016 285.938); /* Gray for neutral */
+  --neutral-hex: #6b7280;                /* Gray hex for charts */
   
   /* Instrument Colors */
   --equity: oklch(0.5 0.15 200);        /* Blue for Equity */
@@ -143,8 +146,11 @@
   
   /* Trading Specific Colors (Dark) */
   --profit: oklch(0.7 0.15 140);        /* Green for profits */
+  --profit-hex: #22c55e;                 /* Green hex for charts (brighter) */
   --loss: oklch(0.7 0.2 15);            /* Red for losses */
+  --loss-hex: #f87171;                   /* Red hex for charts (brighter) */
   --neutral: oklch(0.705 0.015 286.067); /* Gray for neutral */
+  --neutral-hex: #9ca3af;                /* Gray hex for charts (brighter) */
   
   /* Instrument Colors (Dark) */
   --equity: oklch(0.6 0.15 200);        /* Blue for Equity */
@@ -225,6 +231,31 @@
   
   .border-neutral {
     border-color: oklch(var(--neutral) / 0.3);
+  }
+  
+  /* Chart color utilities */
+  .chart-profit {
+    color: var(--profit-hex);
+  }
+  
+  .chart-loss {
+    color: var(--loss-hex);
+  }
+  
+  .chart-neutral {
+    color: var(--neutral-hex);
+  }
+  
+  .bg-chart-profit {
+    background-color: var(--profit-hex);
+  }
+  
+  .bg-chart-loss {
+    background-color: var(--loss-hex);
+  }
+  
+  .bg-chart-neutral {
+    background-color: var(--neutral-hex);
   }
   
   /* Instrument-specific colors */

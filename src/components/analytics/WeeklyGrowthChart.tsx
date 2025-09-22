@@ -157,8 +157,8 @@ export function WeeklyGrowthChart({ data, selectedStrategies, timeRange }: Weekl
                 <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <defs>
                     <linearGradient id="colorPnl" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor="var(--profit-hex)" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="var(--profit-hex)" stopOpacity={0.1}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -220,11 +220,12 @@ export function WeeklyGrowthChart({ data, selectedStrategies, timeRange }: Weekl
                   <Area
                     type="monotone"
                     dataKey="cumulativePnl"
-                    stroke="#10b981"
+                    stroke="var(--profit-hex)"
                     strokeWidth={3}
                     fill="url(#colorPnl)"
-                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
+                    dot={{ fill: 'var(--profit-hex)', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: 'var(--profit-hex)', strokeWidth: 2 }}
+                    className="drop-shadow-sm"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -295,7 +296,8 @@ export function WeeklyGrowthChart({ data, selectedStrategies, timeRange }: Weekl
                     {data.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} 
+                        fill={entry.pnl >= 0 ? 'var(--profit-hex)' : 'var(--loss-hex)'} 
+                        className="drop-shadow-sm"
                       />
                     ))}
                   </Bar>
