@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,8 +8,7 @@ import { motion } from 'framer-motion'
 import { CalendarIcon, Target, TrendingUp, FileText } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -19,12 +18,10 @@ import { DateTimePicker } from '@/components/ui/date-time-picker'
 
 import { 
   PredictionFormData, 
-  CONFIDENCE_LEVELS, 
   PREDICTION_DIRECTION_OPTIONS,
   getConfidenceColor, 
   getConfidenceLabel,
   getDirectionColor,
-  getDirectionLabel,
   getDirectionIcon,
   PredictionDirection
 } from '@/types/prediction'
@@ -32,11 +29,11 @@ import tradeData from '@/data/tradeData.json'
 
 const predictionSchema = z.object({
   predictionDate: z.date({
-    required_error: 'Prediction date is required'
+    message: 'Prediction date is required'
   }),
   strategy: z.string().min(1, 'Strategy is required'),
   direction: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL'], {
-    required_error: 'Direction is required'
+    message: 'Direction is required'
   }),
   strategyNotes: z.string().optional(),
   confidence: z.number().min(1, 'Confidence must be at least 1').max(10, 'Confidence must be at most 10'),
@@ -56,9 +53,6 @@ export function PredictionForm({
   isLoading = false, 
   mode = 'create' 
 }: PredictionFormProps) {
-  const [selectedStrategy, setSelectedStrategy] = useState(initialData?.strategy || '')
-  const [selectedDirection, setSelectedDirection] = useState<PredictionDirection>(initialData?.direction || 'BULLISH')
-  const [confidence, setConfidence] = useState(initialData?.confidence || 5)
 
   const {
     register,
@@ -83,18 +77,15 @@ export function PredictionForm({
   const watchedConfidence = watch('confidence')
 
   const handleStrategyChange = (strategy: string) => {
-    setSelectedStrategy(strategy)
     setValue('strategy', strategy)
   }
 
   const handleDirectionChange = (direction: PredictionDirection) => {
-    setSelectedDirection(direction)
     setValue('direction', direction)
   }
 
   const handleConfidenceChange = (value: number[]) => {
     const newConfidence = value[0]
-    setConfidence(newConfidence)
     setValue('confidence', newConfidence)
   }
 
@@ -398,7 +389,7 @@ export function PredictionForm({
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {tradeData.strategyTags.slice(0, 4).map((strategy, index) => (
+                      {tradeData.strategyTags.slice(0, 4).map((strategy) => (
                     <div key={strategy.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                       <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
                       <span className="text-sm font-medium">{strategy.name}</span>

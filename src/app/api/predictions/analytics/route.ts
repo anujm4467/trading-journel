@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const toDate = searchParams.get('toDate')
 
     // Build date filter
-    const dateFilter: any = {}
+    const dateFilter: Record<string, Date> = {}
     if (fromDate) {
       dateFilter.gte = new Date(fromDate)
     }
@@ -136,9 +136,9 @@ export async function GET(request: NextRequest) {
       acc[month].totalConfidence += prediction.confidence
 
       return acc
-    }, {} as Record<string, any>)
+    }, {} as Record<string, { month: string; totalPredictions: number; passedPredictions: number; totalConfidence: number }>)
 
-    const monthlyTrendsArray = Object.values(monthlyTrends).map((trend: any) => ({
+    const monthlyTrendsArray = Object.values(monthlyTrends).map((trend) => ({
       month: trend.month,
       totalPredictions: trend.totalPredictions,
       successRate: trend.totalPredictions > 0 ? (trend.passedPredictions / trend.totalPredictions) * 100 : 0,
