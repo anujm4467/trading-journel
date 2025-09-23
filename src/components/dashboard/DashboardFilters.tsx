@@ -236,6 +236,7 @@ export function DashboardFilters({
                   <SelectItem value="Breakout">Breakout</SelectItem>
                   <SelectItem value="Momentum">Momentum</SelectItem>
                   <SelectItem value="Swing">Swing</SelectItem>
+                  <SelectItem value="Supertrend">Supertrend</SelectItem>
                 </SelectContent>
               </Select>
             </div>
