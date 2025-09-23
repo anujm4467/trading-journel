@@ -102,7 +102,7 @@ export default function EditPredictionPage() {
               Prediction Not Found
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              The prediction you're looking for doesn't exist or has been deleted.
+              The prediction you&apos;re looking for doesn&apos;t exist or has been deleted.
             </p>
             <Button onClick={() => router.push('/predictions')}>
               Back to Predictions

@@ -6,16 +6,17 @@ import { motion } from 'framer-motion'
 import { Plus, Search, Target, TrendingUp, CheckCircle, XCircle, Clock, Edit, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-import { Prediction, PredictionUpdateData, PredictionStatus, getStatusColor, getStatusLabel, getConfidenceColor, getConfidenceLabel } from '@/types/prediction'
+import { Prediction, PredictionUpdateData, getStatusColor, getStatusLabel, getConfidenceColor, getConfidenceLabel } from '@/types/prediction'
+import { PredictionStatus, PredictionResult } from '@prisma/client'
 
 export default function PredictionsPage() {
   const router = useRouter()
@@ -181,7 +182,7 @@ export default function PredictionsPage() {
             { label: 'Pending', value: predictions.filter(p => p.status === 'PENDING').length, color: 'yellow' },
             { label: 'Passed', value: predictions.filter(p => p.status === 'PASSED').length, color: 'green' },
             { label: 'Failed', value: predictions.filter(p => p.status === 'FAILED').length, color: 'red' }
-          ].map((stat, index) => (
+          ].map((stat) => (
             <Card key={stat.label} className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border border-white/20">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -394,7 +395,7 @@ function PredictionUpdateForm({ prediction, onUpdate, onClose }: PredictionUpdat
     try {
       await onUpdate(prediction.id, {
         status,
-        result: result as any,
+        result: result as PredictionResult,
         failureReason: failureReason || undefined,
         notes: notes || undefined
       })

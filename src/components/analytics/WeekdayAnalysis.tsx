@@ -134,7 +134,7 @@ export function WeekdayAnalysis({ data }: WeekdayAnalysisProps) {
                 </div>
                 <p className="text-lg font-bold text-green-600 dark:text-green-400">{bestDay.day}</p>
                 <p className="text-sm text-green-600 dark:text-green-400">
-                  {bestDay.winRate.toFixed(1)}% win rate ({bestDay.wins}/{bestDay.trades} trades)
+                  {bestDay.winRate.toFixed(1)}% win rate ({Math.round(bestDay.trades * bestDay.winRate / 100)}/{bestDay.trades} trades)
                 </p>
                 <p className="text-xs text-green-500 dark:text-green-500">
                   ₹{bestDay.totalPnl.toLocaleString()} total P&L
@@ -149,7 +149,7 @@ export function WeekdayAnalysis({ data }: WeekdayAnalysisProps) {
                 </div>
                 <p className="text-lg font-bold text-red-600 dark:text-red-400">{worstDay.day}</p>
                 <p className="text-sm text-red-600 dark:text-red-400">
-                  {worstDay.winRate.toFixed(1)}% win rate ({worstDay.wins}/{worstDay.trades} trades)
+                  {worstDay.winRate.toFixed(1)}% win rate ({Math.round(worstDay.trades * worstDay.winRate / 100)}/{worstDay.trades} trades)
                 </p>
                 <p className="text-xs text-red-500 dark:text-red-500">
                   ₹{worstDay.totalPnl.toLocaleString()} total P&L

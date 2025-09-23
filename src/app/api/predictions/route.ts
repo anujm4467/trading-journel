@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { PredictionFormData, PredictionFilters } from '@/types/prediction'
+import { PredictionFormData } from '@/types/prediction'
+import { Prisma, PredictionStatus } from '@prisma/client'
 
 // GET /api/predictions - Get all predictions with optional filters
 export async function GET(request: NextRequest) {
@@ -19,24 +20,23 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: Record<string, unknown> = {}
+    const where: Prisma.PredictionWhereInput = {}
 
     if (status) {
-      where.status = status
+      where.status = status as PredictionStatus
     }
 
     if (strategy) {
       where.strategy = {
-        contains: strategy,
-        mode: 'insensitive'
+        contains: strategy
       }
     }
 
     if (search) {
       where.OR = [
-        { strategy: { contains: search, mode: 'insensitive' } },
-        { strategyNotes: { contains: search, mode: 'insensitive' } },
-        { notes: { contains: search, mode: 'insensitive' } }
+        { strategy: { contains: search } },
+        { strategyNotes: { contains: search } },
+        { notes: { contains: search } }
       ]
     }
 

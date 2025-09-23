@@ -25,8 +25,8 @@ interface StrategyFilterProps {
   strategies: string[]
   selectedStrategies: string[]
   onStrategyChange: (strategies: string[]) => void
-  timeRange: 'week' | 'month' | 'quarter' | 'year' | 'all'
-  onTimeRangeChange: (range: 'week' | 'month' | 'quarter' | 'year' | 'all') => void
+  timeRange: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all'
+  onTimeRangeChange: (range: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all') => void
   viewMode: 'cards' | 'charts' | 'table'
   onViewModeChange: (mode: 'cards' | 'charts' | 'table') => void
 }

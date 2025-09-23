@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Target, 
@@ -9,30 +9,23 @@ import {
   PieChart, 
   Activity, 
   CheckCircle, 
-  XCircle, 
   Clock,
   Calendar,
-  Filter,
   Download
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { Input } from '@/components/ui/input'
 
 import { 
-  PredictionAnalytics, 
-  StrategyPredictionPerformance, 
-  ConfidenceAccuracy,
-  MonthlyPredictionTrend 
+  PredictionAnalytics
 } from '@/types/prediction'
 
 // Chart Components
 import { 
-  LineChart, 
-  Line, 
+  Line,
   AreaChart, 
   Area, 
   BarChart, 
@@ -52,10 +45,9 @@ export default function PredictionAnalyticsPage() {
   const [analytics, setAnalytics] = useState<PredictionAnalytics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({})
-  const [selectedStrategy, setSelectedStrategy] = useState<string>('all')
 
   // Fetch analytics data
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setIsLoading(true)
       const params = new URLSearchParams()
@@ -78,11 +70,11 @@ export default function PredictionAnalyticsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [dateRange])
 
   useEffect(() => {
     fetchAnalytics()
-  }, [dateRange])
+  }, [dateRange, fetchAnalytics])
 
   if (isLoading) {
     return (
@@ -157,11 +149,23 @@ export default function PredictionAnalyticsPage() {
           </div>
           
           <div className="flex items-center space-x-4">
-            <DateRangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              placeholder="Select date range"
-            />
+            <div className="flex items-center space-x-2">
+              <Input
+                type="date"
+                value={dateRange.from ? dateRange.from.toISOString().split('T')[0] : ''}
+                onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value ? new Date(e.target.value) : undefined }))}
+                className="w-40"
+                placeholder="From date"
+              />
+              <span className="text-gray-500">to</span>
+              <Input
+                type="date"
+                value={dateRange.to ? dateRange.to.toISOString().split('T')[0] : ''}
+                onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value ? new Date(e.target.value) : undefined }))}
+                className="w-40"
+                placeholder="To date"
+              />
+            </div>
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
               Export
@@ -205,7 +209,7 @@ export default function PredictionAnalyticsPage() {
               color: 'yellow',
               change: '-2'
             }
-          ].map((metric, index) => (
+          ].map((metric) => (
             <Card key={metric.label} className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border border-white/20">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -298,7 +302,6 @@ export default function PredictionAnalyticsPage() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
@@ -379,7 +382,7 @@ export default function PredictionAnalyticsPage() {
                 <div className="space-y-4">
                   {analytics.strategyPerformance
                     .sort((a, b) => b.successRate - a.successRate)
-                    .map((strategy, index) => (
+                    .map((strategy) => (
                     <div key={strategy.strategy} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">{strategy.strategy}</span>

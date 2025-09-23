@@ -5,11 +5,12 @@ import { PredictionUpdateData } from '@/types/prediction'
 // GET /api/predictions/[id] - Get a specific prediction
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const prediction = await prisma.prediction.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!prediction) {
@@ -32,9 +33,10 @@ export async function GET(
 // PUT /api/predictions/[id] - Update a prediction
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body: PredictionUpdateData = await request.json()
 
     // Validate status
@@ -66,7 +68,7 @@ export async function PUT(
     }
 
     const prediction = await prisma.prediction.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...body,
         updatedAt: new Date()
@@ -89,11 +91,12 @@ export async function PUT(
 // DELETE /api/predictions/[id] - Delete a prediction
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     await prisma.prediction.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     return NextResponse.json({

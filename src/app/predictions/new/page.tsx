@@ -6,7 +6,6 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Target, Save, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 import { PredictionForm } from '@/components/forms/PredictionForm'
@@ -15,7 +14,6 @@ import { PredictionFormData } from '@/types/prediction'
 export default function NewPredictionPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [isDraft, setIsDraft] = useState(false)
 
   const handleCreatePrediction = async (data: PredictionFormData) => {
     try {
@@ -42,29 +40,6 @@ export default function NewPredictionPage() {
     }
   }
 
-  const handleSaveDraft = async (data: PredictionFormData) => {
-    try {
-      setIsLoading(true)
-      setIsDraft(true)
-      
-      // For now, we'll save as a regular prediction
-      // In the future, you could add a draft field to the schema
-      const response = await fetch('/api/predictions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-
-      if (response.ok) {
-        router.push('/predictions')
-      }
-    } catch (error) {
-      console.error('Error saving draft:', error)
-    } finally {
-      setIsLoading(false)
-      setIsDraft(false)
-    }
-  }
 
   const handleCancel = () => {
     router.back()

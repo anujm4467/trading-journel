@@ -18,12 +18,56 @@ import {
   ChevronRight,
   Database,
   Target,
-  TrendingUp
+  TrendingUp,
+  PieChart,
+  Clock,
+  Shield,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 
 interface SidebarProps {
   className?: string
 }
+
+const analyticsSubItems = [
+  {
+    name: 'Overview',
+    href: '/analytics',
+    icon: BarChart3,
+    description: 'Analytics dashboard overview'
+  },
+  {
+    name: 'Performance',
+    href: '/analytics/performance',
+    icon: BarChart3,
+    description: 'Performance charts & metrics'
+  },
+  {
+    name: 'Strategies',
+    href: '/analytics/strategies',
+    icon: PieChart,
+    description: 'Strategy performance analysis'
+  },
+  {
+    name: 'Time Analysis',
+    href: '/analytics/time-analysis',
+    icon: Clock,
+    description: 'Time-based performance patterns'
+  },
+  {
+    name: 'Risk Metrics',
+    href: '/analytics/risk-metrics',
+    icon: Shield,
+    description: 'Risk analysis & management'
+  },
+  {
+    name: 'Comparison',
+    href: '/analytics/comparison',
+    icon: TrendingUp,
+    description: 'Performance comparison & benchmarks'
+  }
+]
 
 const navigationItems = [
   {
@@ -61,7 +105,8 @@ const navigationItems = [
     name: 'Analytics',
     href: '/analytics',
     icon: BarChart3,
-    description: 'Performance analysis'
+    description: 'Performance analysis',
+    subItems: analyticsSubItems
   },
   {
     name: 'Prediction Analytics',
@@ -91,7 +136,28 @@ const navigationItems = [
 
 export function Sidebar({ className }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [expandedItems, setExpandedItems] = useState<string[]>(['analytics'])
   const pathname = usePathname()
+
+  const toggleExpanded = (itemName: string) => {
+    setExpandedItems(prev => 
+      prev.includes(itemName) 
+        ? prev.filter(item => item !== itemName)
+        : [...prev, itemName]
+    )
+  }
+
+  const isItemActive = (href: string, subItems?: any[]) => {
+    if (pathname === href) return true
+    if (subItems) {
+      return subItems.some(subItem => pathname === subItem.href)
+    }
+    return false
+  }
+
+  const isSubItemActive = (href: string) => {
+    return pathname === href
+  }
 
   return (
     <div className={cn(
@@ -125,19 +191,28 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4">
         {navigationItems.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = isItemActive(item.href, item.subItems)
+          const isExpanded = expandedItems.includes(item.name.toLowerCase())
           const Icon = item.icon
 
           return (
-            <Link key={item.name} href={item.href}>
+            <div key={item.name}>
+              {/* Main Navigation Item */}
               <div
                 className={cn(
-                  "group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  "group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer",
                   isActive 
                     ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" 
                     : "text-sidebar-foreground",
                   isCollapsed && "justify-center px-2"
                 )}
+                onClick={() => {
+                  if (item.subItems && !isCollapsed) {
+                    toggleExpanded(item.name.toLowerCase())
+                  } else {
+                    window.location.href = item.href
+                  }
+                }}
               >
                 <Icon className={cn(
                   "h-5 w-5 flex-shrink-0",
@@ -148,11 +223,30 @@ export function Sidebar({ className }: SidebarProps) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="truncate">{item.name}</span>
-                      {item.badge !== undefined && item.badge > 0 && (
-                        <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-                          {item.badge}
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {item.badge !== undefined && item.badge > 0 && (
+                          <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                            {item.badge}
+                          </Badge>
+                        )}
+                        {item.subItems && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-4 w-4 p-0 hover:bg-transparent"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleExpanded(item.name.toLowerCase())
+                            }}
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="h-3 w-3" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
                       {item.description}
@@ -167,7 +261,38 @@ export function Sidebar({ className }: SidebarProps) {
                   </div>
                 )}
               </div>
-            </Link>
+
+              {/* Sub Navigation Items */}
+              {item.subItems && !isCollapsed && isExpanded && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {item.subItems.map((subItem) => {
+                    const isSubActive = isSubItemActive(subItem.href)
+                    const SubIcon = subItem.icon
+
+                    return (
+                      <Link key={subItem.name} href={subItem.href}>
+                        <div
+                          className={cn(
+                            "group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                            isSubActive 
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm" 
+                              : "text-sidebar-foreground/70"
+                          )}
+                        >
+                          <SubIcon className="h-4 w-4 flex-shrink-0 mr-3" />
+                          <div className="flex-1 min-w-0">
+                            <div className="truncate">{subItem.name}</div>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {subItem.description}
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           )
         })}
       </nav>

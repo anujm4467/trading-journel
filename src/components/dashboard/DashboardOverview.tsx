@@ -27,9 +27,22 @@ import { DashboardFilters } from './DashboardFilters'
 export function DashboardOverview() {
   const [timeframe, setTimeframe] = useState('Monthly')
   
+  // Map dashboard timeframe to analytics API timeRange
+  const getTimeRangeFromTimeframe = (timeframe: string): 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' => {
+    switch (timeframe) {
+      case 'Today': return 'today'
+      case 'Weekly': return 'week'
+      case 'Monthly': return 'month'
+      case 'Quarterly': return 'quarter'
+      case 'Yearly': return 'year'
+      default: return 'month'
+    }
+  }
+  
   // Initialize filters with useMemo to prevent infinite re-renders
   const initialFilters: AnalyticsFilters = useMemo(() => ({
-    instrumentType: 'OPTIONS' // Default to Options as requested
+    instrumentType: 'OPTIONS', // Default to Options as requested
+    timeRange: 'month' // Default to month
   }), [])
 
   const { data, loading, error, refetch, setFilters, filters } = useAnalytics(initialFilters)
@@ -38,52 +51,15 @@ export function DashboardOverview() {
   console.log('DashboardOverview - filters from useAnalytics:', filters)
   console.log('DashboardOverview - data loaded:', data ? 'yes' : 'no')
 
-  // Update date filters based on timeframe
+  // Update timeRange based on timeframe
   useEffect(() => {
     console.log('DashboardOverview - useEffect triggered for timeframe:', timeframe)
-    const now = new Date()
-    let dateFrom: string | undefined
-
-    switch (timeframe) {
-      case 'Today':
-        // Use date-only string for today (YYYY-MM-DD)
-        dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0]
-        break
-      case 'Weekly':
-        // Get current week's Monday
-        const currentDay = now.getDay() // 0 = Sunday, 1 = Monday, etc.
-        const daysToMonday = currentDay === 0 ? -6 : 1 - currentDay // If Sunday, go back 6 days; otherwise go to Monday
-        const mondayDate = new Date(now)
-        mondayDate.setDate(now.getDate() + daysToMonday)
-        mondayDate.setHours(0, 0, 0, 0)
-        dateFrom = mondayDate.toISOString().split('T')[0]
-        break
-      case 'Monthly':
-        // Use date-only string for start of current month
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-        dateFrom = startOfMonth.toISOString().split('T')[0]
-        break
-      case 'Quarterly':
-        // Use date-only string for 90 days ago
-        const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
-        dateFrom = ninetyDaysAgo.toISOString().split('T')[0]
-        break
-      case 'Yearly':
-        // Use date-only string for 365 days ago
-        const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
-        dateFrom = oneYearAgo.toISOString().split('T')[0]
-        break
-    }
-
-    // Use date-only string for today as the end date
-    const dateTo = now.toISOString().split('T')[0]
-
-    console.log('DashboardOverview - setting date filters:', { dateFrom, dateTo })
+    const timeRange = getTimeRangeFromTimeframe(timeframe)
+    console.log('DashboardOverview - setting timeRange:', timeRange)
     setFilters({
-      dateFrom,
-      dateTo
+      timeRange
     })
-  }, [timeframe, setFilters]) // Remove filters dependency to prevent circular dependency
+  }, [timeframe, setFilters])
 
   const handleFiltersChange = (newFilters: AnalyticsFilters) => {
     console.log('DashboardOverview - handleFiltersChange called with:', newFilters)

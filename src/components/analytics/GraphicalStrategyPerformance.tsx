@@ -48,6 +48,22 @@ export function GraphicalStrategyPerformance({
   selectedStrategies, 
   onStrategySelect
 }: GraphicalStrategyPerformanceProps) {
+  // Define colors and helper function first
+  const COLORS = [
+    'var(--profit-hex)', // Green for profit
+    '#3b82f6', // Blue
+    '#8b5cf6', // Purple
+    '#f59e0b', // Amber
+    'var(--loss-hex)', // Red for loss
+    '#06b6d4', // Cyan
+    '#84cc16', // Lime
+    '#f97316'  // Orange
+  ]
+
+  function getStrategyColor(index: number): string {
+    return COLORS[index % COLORS.length]
+  }
+
   const totalTrades = data.reduce((sum, strategy) => sum + strategy.trades, 0)
   const totalPnl = data.reduce((sum, strategy) => sum + strategy.pnl, 0)
   const avgWinRate = data.length > 0 ? data.reduce((sum, strategy) => sum + strategy.winRate, 0) / data.length : 0
@@ -68,21 +84,6 @@ export function GraphicalStrategyPerformance({
     winRate: strategy.winRate,
     avgPnl: strategy.avgPnl
   }))
-
-  const COLORS = [
-    'var(--profit-hex)', // Green for profit
-    '#3b82f6', // Blue
-    '#8b5cf6', // Purple
-    '#f59e0b', // Amber
-    'var(--loss-hex)', // Red for loss
-    '#06b6d4', // Cyan
-    '#84cc16', // Lime
-    '#f97316'  // Orange
-  ]
-
-  function getStrategyColor(index: number): string {
-    return COLORS[index % COLORS.length]
-  }
 
   const formatCurrency = (value: number) => {
     return `₹${Math.round(value).toLocaleString()}`

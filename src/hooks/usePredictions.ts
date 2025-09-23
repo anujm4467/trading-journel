@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react'
-import { Prediction, PredictionFormData, PredictionUpdateData, PredictionFilters } from '@/types/prediction'
+import { useState, useEffect, useCallback } from 'react'
+import { Prediction, PredictionFormData, PredictionUpdateData, PredictionFilters, PredictionAnalytics } from '@/types/prediction'
 
 export function usePredictions(filters?: PredictionFilters) {
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchPredictions = async () => {
+  const fetchPredictions = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
@@ -49,7 +49,7 @@ export function usePredictions(filters?: PredictionFilters) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [filters])
 
   const createPrediction = async (data: PredictionFormData): Promise<boolean> => {
     try {
@@ -153,7 +153,7 @@ export function usePredictions(filters?: PredictionFilters) {
 
   useEffect(() => {
     fetchPredictions()
-  }, [filters])
+  }, [filters, fetchPredictions])
 
   return {
     predictions,
@@ -168,7 +168,7 @@ export function usePredictions(filters?: PredictionFilters) {
 }
 
 export function usePredictionAnalytics() {
-  const [analytics, setAnalytics] = useState<any>(null)
+  const [analytics, setAnalytics] = useState<PredictionAnalytics | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
