@@ -25,6 +25,7 @@ import {
 
 // Chart Components
 import { 
+  LineChart,
   Line,
   AreaChart, 
   Area, 
@@ -62,8 +63,8 @@ export default function PredictionAnalyticsPage() {
       const response = await fetch(`/api/predictions/analytics?${params.toString()}`)
       const data = await response.json()
       
-      if (data.data) {
-        setAnalytics(data.data)
+      if (data.analytics) {
+        setAnalytics(data.analytics)
       }
     } catch (error) {
       console.error('Error fetching analytics:', error)
