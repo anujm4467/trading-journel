@@ -13,8 +13,8 @@ export function WinLossChart({ winningTrades, losingTrades }: WinLossChartProps)
   const lossRate = totalTrades > 0 ? (losingTrades / totalTrades) * 100 : 0
 
   const data = [
-    { name: 'Winning Trades', value: winRate, count: winningTrades, color: 'var(--profit-hex)' },
-    { name: 'Losing Trades', value: lossRate, count: losingTrades, color: 'var(--loss-hex)' }
+    { name: 'Winning Trades', value: winRate, count: winningTrades, color: '#10b981' }, // green-500
+    { name: 'Losing Trades', value: lossRate, count: losingTrades, color: '#ef4444' }  // red-500
   ]
   return (
     <div className="h-[300px]">

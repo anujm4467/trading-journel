@@ -14,6 +14,7 @@ import {
   PieChart
 } from 'lucide-react'
 import { PerformanceChart } from '@/components/analytics/PerformanceChart'
+import { EnhancedPerformanceChart } from '@/components/analytics/EnhancedPerformanceChart'
 import { WinLossChart } from '@/components/analytics/WinLossChart'
 import { AnalyticsFilterPanel } from '@/components/analytics/AnalyticsFilters'
 import { WeeklyGrowthChart } from '@/components/analytics/WeeklyGrowthChart'
@@ -264,13 +265,13 @@ export default function PerformancePage() {
           </CardHeader>
           <CardContent>
             {data.monthlyPerformanceData && data.monthlyPerformanceData.length > 0 ? (
-              <PerformanceChart data={data.monthlyPerformanceData.map(item => ({
+              <EnhancedPerformanceChart data={data.monthlyPerformanceData.map(item => ({
                 month: item.month,
                 pnl: item.pnl,
                 trades: item.trades
               }))} />
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+              <div className="h-[600px] flex items-center justify-center text-gray-500 dark:text-gray-400">
                 <div className="text-center">
                   <div className="p-4 rounded-full bg-gray-100 dark:bg-gray-800 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <TrendingUp className="h-8 w-8 opacity-50" />

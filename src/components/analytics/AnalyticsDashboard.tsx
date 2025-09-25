@@ -19,6 +19,7 @@ import {
   PieChart
 } from 'lucide-react'
 import { PerformanceChart } from './PerformanceChart'
+import { EnhancedPerformanceChart } from './EnhancedPerformanceChart'
 import { WinLossChart } from './WinLossChart'
 import { TimeAnalysis } from './TimeAnalysis'
 import { RiskMetrics } from './RiskMetrics'
@@ -296,20 +297,20 @@ export function AnalyticsDashboard() {
                     <TrendingUp className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-gray-900 dark:text-gray-100">P&L Over Time</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Your trading performance over time</div>
+                    <div className="text-xl font-bold text-gray-900 dark:text-gray-100">P&L Performance Analysis</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Monthly performance with profit/loss visualization</div>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {data.monthlyPerformanceData && data.monthlyPerformanceData.length > 0 ? (
-                  <PerformanceChart data={data.monthlyPerformanceData.map(item => ({
+                  <EnhancedPerformanceChart data={data.monthlyPerformanceData.map(item => ({
                     month: item.month,
                     pnl: item.pnl,
                     trades: item.trades
                   }))} />
                 ) : (
-                  <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                  <div className="h-[600px] flex items-center justify-center text-gray-500 dark:text-gray-400">
                     <div className="text-center">
                       <div className="p-4 rounded-full bg-gray-100 dark:bg-gray-800 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                         <TrendingUp className="h-8 w-8 opacity-50" />

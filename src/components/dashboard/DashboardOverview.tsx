@@ -20,12 +20,13 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react'
-import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, BarChart, Bar } from 'recharts'
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, BarChart, Bar, ComposedChart } from 'recharts'
+import { EnhancedPerformanceChart } from '@/components/analytics/EnhancedPerformanceChart'
 import { useAnalytics, AnalyticsFilters } from '@/hooks/useAnalytics'
 import { DashboardFilters } from './DashboardFilters'
 
 export function DashboardOverview() {
-  const [timeframe, setTimeframe] = useState('Monthly')
+  const [timeframe, setTimeframe] = useState('Today')
   
   // Map dashboard timeframe to analytics API timeRange
   const getTimeRangeFromTimeframe = (timeframe: string): 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' => {
@@ -42,7 +43,7 @@ export function DashboardOverview() {
   // Initialize filters with useMemo to prevent infinite re-renders
   const initialFilters: AnalyticsFilters = useMemo(() => ({
     instrumentType: 'OPTIONS', // Default to Options as requested
-    timeRange: 'month' // Default to month
+    timeRange: 'today' // Default to today
   }), [])
 
   const { data, loading, error, refetch, setFilters, filters } = useAnalytics(initialFilters)
@@ -358,51 +359,25 @@ export function DashboardOverview() {
               Performance Overview
             </CardTitle>
             <CardDescription className="text-gray-600 dark:text-gray-400">
-              Your trading performance over the selected period
+              Your trading performance over the selected period with profit/loss visualization
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="h-[350px]">
-              {data.monthlyPerformanceData && data.monthlyPerformanceData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsLineChart data={data.monthlyPerformanceData}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis 
-                      dataKey="month" 
-                      tick={{ fontSize: 12 }}
-                      axisLine={{ stroke: '#e5e7eb' }}
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 12 }}
-                      axisLine={{ stroke: '#e5e7eb' }}
-                    />
-                    <Tooltip 
-                      formatter={(value: number) => [`₹${value.toLocaleString()}`, 'P&L']}
-                      labelStyle={{ color: '#374151', fontSize: '14px' }}
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="pnl" 
-                      stroke="var(--profit-hex)" 
-                      strokeWidth={3}
-                      dot={{ fill: 'var(--profit-hex)', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, stroke: 'var(--profit-hex)', strokeWidth: 2 }}
-                      className="drop-shadow-sm"
-                    />
-                  </RechartsLineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                  No performance data available for the selected period
+            {data.monthlyPerformanceData && data.monthlyPerformanceData.length > 0 ? (
+              <EnhancedPerformanceChart data={data.monthlyPerformanceData.map(item => ({
+                month: item.month,
+                pnl: item.pnl,
+                trades: item.trades
+              }))} />
+            ) : (
+              <div className="h-[600px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                <div className="text-center">
+                  <LineChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-sm font-medium">No performance data available</p>
+                  <p className="text-xs text-gray-400 mt-1">Start trading to see your performance chart</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -544,14 +519,28 @@ export function DashboardOverview() {
               Weekly Performance
             </CardTitle>
             <CardDescription className="text-gray-600 dark:text-gray-400">
-              This week&apos;s trading performance
+              This week&apos;s trading performance with profit/loss indicators
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="h-[250px]">
               {data.weeklyPerformanceData && data.weeklyPerformanceData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.weeklyPerformanceData}>
+                  <ComposedChart data={data.weeklyPerformanceData.map(item => ({
+                    ...item,
+                    isProfit: item.pnl >= 0,
+                    color: item.pnl >= 0 ? '#10b981' : '#ef4444'
+                  }))}>
+                    <defs>
+                      <linearGradient id="weeklyProfitGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.3}/>
+                      </linearGradient>
+                      <linearGradient id="weeklyLossGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.3}/>
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                     <XAxis 
                       dataKey="day" 
@@ -563,19 +552,34 @@ export function DashboardOverview() {
                       axisLine={{ stroke: '#e5e7eb' }}
                     />
                     <Tooltip 
-                      formatter={(value: number) => [`₹${value.toLocaleString()}`, 'P&L']}
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px'
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload
+                          return (
+                            <div className="rounded-lg border bg-white dark:bg-gray-800 p-3 shadow-lg">
+                              <p className="font-medium text-gray-900 dark:text-gray-100">{label}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <div className={`w-3 h-3 rounded-full ${data.isProfit ? 'bg-green-500' : 'bg-red-500'}`} />
+                                <span className="text-sm font-medium">
+                                  P&L: <span className={data.isProfit ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                                    ₹{data.pnl.toLocaleString()}
+                                  </span>
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        }
+                        return null
                       }}
                     />
                     <Bar 
                       dataKey="pnl" 
-                      fill="#3b82f6"
+                      fill={(entry) => entry.isProfit ? "url(#weeklyProfitGradient)" : "url(#weeklyLossGradient)"}
                       radius={[4, 4, 0, 0]}
+                      stroke={(entry) => entry.isProfit ? "#10b981" : "#ef4444"}
+                      strokeWidth={1}
                     />
-                  </BarChart>
+                  </ComposedChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
@@ -638,45 +642,6 @@ export function DashboardOverview() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid gap-6 sm:grid-cols-2">
-        <Card className="group cursor-pointer backdrop-blur-sm bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200/50 dark:border-blue-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg flex items-center gap-2 text-blue-700 dark:text-blue-300">
-              <TrendingUp className="h-5 w-5" />
-              Add New Trade
-            </CardTitle>
-            <CardDescription className="text-blue-600 dark:text-blue-400">
-              Record your latest trading activity
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Add Trade
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="group cursor-pointer backdrop-blur-sm bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200/50 dark:border-green-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg flex items-center gap-2 text-green-700 dark:text-green-300">
-              <BarChart3 className="h-5 w-5" />
-              View Analytics
-            </CardTitle>
-            <CardDescription className="text-green-600 dark:text-green-400">
-              Deep dive into your performance metrics
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <Button variant="outline" className="w-full border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20 shadow-lg hover:shadow-xl transition-all duration-200">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              View Analytics
-            </Button>
-          </CardContent>
-        </Card>
-
-      </div>
     </div>
   )
 }
