@@ -129,52 +129,6 @@ export default function NewPredictionPage() {
           </div>
         </motion.div>
 
-        {/* Help Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 rounded-xl p-6 border border-white/20"
-        >
-          <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
-            <Target className="h-5 w-5 text-blue-600" />
-            <span>Tips for Better Predictions</span>
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
-            <div className="space-y-2">
-              <h4 className="font-medium text-gray-900 dark:text-gray-100">Strategy Selection</h4>
-              <ul className="space-y-1 list-disc list-inside">
-                <li>Choose the strategy that best fits your current market analysis</li>
-                <li>Consider market conditions and volatility</li>
-                <li>Be specific about your approach</li>
-              </ul>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-medium text-gray-900 dark:text-gray-100">Confidence Level</h4>
-              <ul className="space-y-1 list-disc list-inside">
-                <li>Rate your confidence honestly (1-10 scale)</li>
-                <li>Consider all factors: technical, fundamental, sentiment</li>
-                <li>Track how your confidence correlates with actual results</li>
-              </ul>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-medium text-gray-900 dark:text-gray-100">Strategy Notes</h4>
-              <ul className="space-y-1 list-disc list-inside">
-                <li>Document your entry/exit criteria clearly</li>
-                <li>Include risk management rules</li>
-                <li>Note any specific market conditions</li>
-              </ul>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-medium text-gray-900 dark:text-gray-100">Tracking Results</h4>
-              <ul className="space-y-1 list-disc list-inside">
-                <li>Update predictions with actual results</li>
-                <li>Analyze patterns in your successful strategies</li>
-                <li>Learn from failed predictions</li>
-              </ul>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </div>
   )

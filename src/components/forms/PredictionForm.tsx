@@ -104,9 +104,9 @@ export function PredictionForm({
       transition={{ duration: 0.3 }}
       className="max-w-7xl mx-auto"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="max-w-4xl mx-auto">
         {/* Main Form */}
-        <div className="lg:col-span-3">
+        <div>
           <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-900/90 shadow-2xl border border-white/20">
             <CardContent className="space-y-12 pt-12 px-8">
               <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-12">
@@ -327,108 +327,6 @@ export function PredictionForm({
               </form>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="space-y-6">
-            {/* Tips Card */}
-            <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border border-white/20">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center space-x-2">
-                  <Target className="h-5 w-5 text-blue-600" />
-                  <span>Tips for Better Predictions</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">Strategy Selection</h4>
-                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <li className="flex items-start space-x-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
-                      <span>Choose strategies that match current market conditions</span>
-                    </li>
-                    <li className="flex items-start space-x-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
-                      <span>Consider volatility and trend strength</span>
-                    </li>
-                    <li className="flex items-start space-x-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
-                      <span>Be specific about your approach</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">Confidence Level</h4>
-                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <li className="flex items-start space-x-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                      <span>Rate your confidence honestly (1-10 scale)</span>
-                    </li>
-                    <li className="flex items-start space-x-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                      <span>Consider all factors: technical, fundamental, sentiment</span>
-                    </li>
-                    <li className="flex items-start space-x-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                      <span>Track how confidence correlates with results</span>
-                    </li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Strategy Examples */}
-            <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border border-white/20">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center space-x-2">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
-                  <span>Popular Strategies</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                      {tradeData.strategyTags.slice(0, 4).map((strategy) => (
-                    <div key={strategy.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
-                      <span className="text-sm font-medium">{strategy.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Confidence Guide */}
-            <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border border-white/20">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center space-x-2">
-                  <Target className="h-5 w-5 text-orange-600" />
-                  <span>Confidence Guide</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-red-600">1-3: Very Low</span>
-                    <span className="text-xs text-gray-500">High uncertainty</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-orange-600">4-6: Medium</span>
-                    <span className="text-xs text-gray-500">Moderate confidence</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-green-600">7-8: High</span>
-                    <span className="text-xs text-gray-500">Strong conviction</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-green-700">9-10: Maximum</span>
-                    <span className="text-xs text-gray-500">Very high certainty</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
     </motion.div>
