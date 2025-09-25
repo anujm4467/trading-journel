@@ -39,7 +39,7 @@ export function usePredictions(filters?: PredictionFilters) {
       const data = await response.json()
 
       if (response.ok) {
-        setPredictions(data.data || [])
+        setPredictions(data.predictions || [])
       } else {
         setError(data.error || 'Failed to fetch predictions')
       }
@@ -139,7 +139,7 @@ export function usePredictions(filters?: PredictionFilters) {
       const data = await response.json()
 
       if (response.ok) {
-        return data.data
+        return data.prediction || data.data
       } else {
         setError(data.error || 'Failed to fetch prediction')
         return null
@@ -190,7 +190,7 @@ export function usePredictionAnalytics() {
       const data = await response.json()
 
       if (response.ok) {
-        setAnalytics(data.data)
+        setAnalytics(data.analytics || data.data)
       } else {
         setError(data.error || 'Failed to fetch analytics')
       }

@@ -29,6 +29,8 @@ export interface PredictionFormData {
 export interface PredictionUpdateData {
   status: PredictionStatus
   result?: PredictionResult
+  actualDirection?: PredictionDirection
+  actualNotes?: string
   failureReason?: string
   notes?: string
 }

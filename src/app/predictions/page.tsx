@@ -36,9 +36,9 @@ export default function PredictionsPage() {
       const response = await fetch('/api/predictions')
       const data = await response.json()
       
-      if (data.data) {
-        setPredictions(data.data)
-        setFilteredPredictions(data.data)
+      if (data.predictions) {
+        setPredictions(data.predictions)
+        setFilteredPredictions(data.predictions)
       }
     } catch (error) {
       console.error('Error fetching predictions:', error)
