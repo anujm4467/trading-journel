@@ -507,29 +507,12 @@ export function TradeDetailsView({ trade, onExit }: TradeDetailsViewProps) {
                       const hedgeExitValue = trade.hedgePosition.exitPrice * trade.hedgePosition.quantity
                       let hedgeGrossPnl = 0
                       
-                      if (trade.hedgePosition.position === 'BUY') {
-                        hedgeGrossPnl = hedgeExitValue - hedgeEntryValue
-                      } else {
-                        hedgeGrossPnl = hedgeEntryValue - hedgeExitValue
-                      }
+                      // Hedge P&L calculation: exit - entry (regardless of position)
+                      hedgeGrossPnl = hedgeExitValue - hedgeEntryValue
                       
                       const hedgeCharges = trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
                       const hedgeNetPnl = hedgeGrossPnl - hedgeCharges
                       
-                      // Debug logging
-                      console.log('Hedge P&L Calculation:', {
-                        position: trade.hedgePosition.position,
-                        entryPrice: trade.hedgePosition.entryPrice,
-                        exitPrice: trade.hedgePosition.exitPrice,
-                        quantity: trade.hedgePosition.quantity,
-                        entryValue: hedgeEntryValue,
-                        exitValue: hedgeExitValue,
-                        calculatedGrossPnl: hedgeGrossPnl,
-                        hedgeCharges,
-                        hedgeNetPnl,
-                        storedGrossPnl: trade.hedgePosition.grossPnl,
-                        storedNetPnl: trade.hedgePosition.netPnl
-                      })
                       
                       return (
                         <>

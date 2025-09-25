@@ -203,7 +203,8 @@ export default function EditTradePage() {
       } : undefined,
       hedgePosition: trade.hedgePosition ? {
         id: trade.hedgePosition.id,
-        optionType: trade.hedgePosition.position as 'CALL' | 'PUT', // Assuming position maps to optionType
+        position: trade.hedgePosition.position, // Add position field
+        optionType: trade.hedgePosition.position === 'BUY' ? 'CALL' : 'PUT', // Convert position to optionType
         quantity: trade.hedgePosition.quantity,
         entryPrice: trade.hedgePosition.entryPrice,
         exitPrice: trade.hedgePosition.exitPrice || undefined,
@@ -213,7 +214,17 @@ export default function EditTradePage() {
         exitValue: trade.hedgePosition.exitValue || undefined,
         grossPnl: trade.hedgePosition.grossPnl || undefined,
         netPnl: trade.hedgePosition.netPnl || undefined,
-        notes: trade.hedgePosition.notes || undefined
+        notes: trade.hedgePosition.notes || undefined,
+        charges: trade.hedgePosition.charges?.map(charge => ({
+          id: charge.id,
+          tradeId: charge.hedgeId, // Use hedgeId as tradeId for compatibility
+          chargeType: charge.chargeType as 'BROKERAGE' | 'STT' | 'EXCHANGE' | 'SEBI' | 'STAMP_DUTY' | 'GST',
+          rate: charge.rate,
+          baseAmount: charge.baseAmount,
+          amount: charge.amount,
+          description: charge.description || undefined,
+          createdAt: typeof charge.createdAt === 'string' ? charge.createdAt : charge.createdAt.toISOString()
+        })) || []
       } : undefined
     }
   }

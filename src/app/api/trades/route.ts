@@ -437,12 +437,8 @@ export async function POST(request: NextRequest) {
               entryValue: validatedData.hedgeQuantity * validatedData.hedgeEntryPrice,
               exitValue: validatedData.hedgeExitPrice ? validatedData.hedgeQuantity * validatedData.hedgeExitPrice : null,
               grossPnl: validatedData.hedgeExitPrice ? 
-                (position === 'BUY' ? 
-                  // Main trade is BUY, hedge is SELL, so hedge P&L = entry - exit
-                  (validatedData.hedgeQuantity * validatedData.hedgeEntryPrice) - (validatedData.hedgeQuantity * validatedData.hedgeExitPrice) :
-                  // Main trade is SELL, hedge is BUY, so hedge P&L = exit - entry
-                  (validatedData.hedgeQuantity * validatedData.hedgeExitPrice) - (validatedData.hedgeQuantity * validatedData.hedgeEntryPrice)
-                ) : null,
+                // Hedge P&L calculation: exit - entry (regardless of position)
+                (validatedData.hedgeQuantity * validatedData.hedgeExitPrice) - (validatedData.hedgeQuantity * validatedData.hedgeEntryPrice) : null,
               netPnl: null, // Will be calculated after charges
               totalCharges: 0, // Will be calculated
               percentageReturn: null, // Will be calculated

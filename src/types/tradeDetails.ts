@@ -67,6 +67,7 @@ export interface TradeDetails {
   // Hedge position data
   hedgePosition?: {
     id: string
+    position: 'BUY' | 'SELL'  // Add position field for P&L calculation
     optionType: 'CALL' | 'PUT'
     entryDate: string
     exitDate?: string
@@ -80,6 +81,16 @@ export interface TradeDetails {
     totalCharges?: number
     percentageReturn?: number
     notes?: string
+    charges?: Array<{
+      id: string
+      tradeId: string
+      chargeType: 'BROKERAGE' | 'STT' | 'EXCHANGE' | 'SEBI' | 'STAMP_DUTY' | 'GST'
+      rate: number
+      baseAmount: number
+      amount: number
+      description?: string
+      createdAt: string
+    }>
   }
   
   // Charges breakdown (array from database)

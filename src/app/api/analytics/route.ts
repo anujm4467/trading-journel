@@ -120,12 +120,22 @@ export async function GET(request: NextRequest) {
       if (trade.exitPrice) {
         const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
         const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-        const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-        const totalTradeCharges = tradeCharges + hedgeCharges
         
-        totalGrossPnl += grossPnl
-        totalCharges += totalTradeCharges
-        totalNetPnl += grossPnl - totalTradeCharges
+        // Calculate hedge position P&L if exists
+        let hedgeGrossPnl = 0
+        let hedgeCharges = 0
+        if (trade.hedgePosition && trade.hedgePosition.exitPrice) {
+          // Hedge P&L calculation: exit - entry (regardless of position)
+          hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+          hedgeCharges = trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+        }
+        
+        const combinedGrossPnl = grossPnl + hedgeGrossPnl
+        const combinedCharges = tradeCharges + hedgeCharges
+        
+        totalGrossPnl += combinedGrossPnl
+        totalCharges += combinedCharges
+        totalNetPnl += combinedGrossPnl - combinedCharges
       }
     })
 
@@ -135,13 +145,29 @@ export async function GET(request: NextRequest) {
         if (!trade.exitPrice) return false
         const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
         const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-        const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-        return grossPnl - (tradeCharges + hedgeCharges) > 0
+        
+        // Calculate hedge P&L
+        let hedgeGrossPnl = 0
+        let hedgeCharges = 0
+        if (trade.hedgePosition && trade.hedgePosition.exitPrice) {
+          hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+          hedgeCharges = trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+        }
+        
+        return (grossPnl + hedgeGrossPnl) - (tradeCharges + hedgeCharges) > 0
       }).reduce((sum, trade) => {
         const grossPnl = (trade.exitPrice! - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
         const tradeCharges = trade.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-        const hedgeCharges = trade.hedgePosition?.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-        return sum + grossPnl - (tradeCharges + hedgeCharges)
+        
+        // Calculate hedge P&L
+        let hedgeGrossPnl = 0
+        let hedgeCharges = 0
+        if (trade.hedgePosition && trade.hedgePosition.exitPrice) {
+          hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+          hedgeCharges = trade.hedgePosition.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
+        }
+        
+        return sum + (grossPnl + hedgeGrossPnl) - (tradeCharges + hedgeCharges)
       }, 0) / winningTrades : 0
 
     const averageLoss = losingTrades > 0 ?
@@ -149,13 +175,29 @@ export async function GET(request: NextRequest) {
         if (!trade.exitPrice) return false
         const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
         const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-        const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-        return grossPnl - (tradeCharges + hedgeCharges) < 0
+        
+        // Calculate hedge P&L
+        let hedgeGrossPnl = 0
+        let hedgeCharges = 0
+        if (trade.hedgePosition && trade.hedgePosition.exitPrice) {
+          hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+          hedgeCharges = trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+        }
+        
+        return (grossPnl + hedgeGrossPnl) - (tradeCharges + hedgeCharges) < 0
       }).reduce((sum, trade) => {
         const grossPnl = (trade.exitPrice! - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
         const tradeCharges = trade.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-        const hedgeCharges = trade.hedgePosition?.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-        return sum + grossPnl - (tradeCharges + hedgeCharges)
+        
+        // Calculate hedge P&L
+        let hedgeGrossPnl = 0
+        let hedgeCharges = 0
+        if (trade.hedgePosition && trade.hedgePosition.exitPrice) {
+          hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+          hedgeCharges = trade.hedgePosition.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
+        }
+        
+        return sum + (grossPnl + hedgeGrossPnl) - (tradeCharges + hedgeCharges)
       }, 0) / losingTrades : 0
 
     // Calculate profit factor
@@ -163,26 +205,58 @@ export async function GET(request: NextRequest) {
       if (!trade.exitPrice) return false
       const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
       const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-      const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-      return grossPnl - (tradeCharges + hedgeCharges) > 0
+      
+      // Calculate hedge P&L
+      let hedgeGrossPnl = 0
+      let hedgeCharges = 0
+      if (trade.hedgePosition && trade.hedgePosition.exitPrice) {
+        hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+        hedgeCharges = trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+      }
+      
+      return (grossPnl + hedgeGrossPnl) - (tradeCharges + hedgeCharges) > 0
     }).reduce((sum, trade) => {
       const grossPnl = (trade.exitPrice! - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
       const tradeCharges = trade.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-      const hedgeCharges = trade.hedgePosition?.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-      return sum + grossPnl - (tradeCharges + hedgeCharges)
+      
+      // Calculate hedge P&L
+      let hedgeGrossPnl = 0
+      let hedgeCharges = 0
+      if (trade.hedgePosition && trade.hedgePosition.exitPrice) {
+        hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+        hedgeCharges = trade.hedgePosition.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
+      }
+      
+      return sum + (grossPnl + hedgeGrossPnl) - (tradeCharges + hedgeCharges)
     }, 0))
 
     const totalLosses = Math.abs(trades.filter(trade => {
       if (!trade.exitPrice) return false
       const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
       const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-      const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-      return grossPnl - (tradeCharges + hedgeCharges) < 0
+      
+      // Calculate hedge P&L
+      let hedgeGrossPnl = 0
+      let hedgeCharges = 0
+      if (trade.hedgePosition && trade.hedgePosition.exitPrice) {
+        hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+        hedgeCharges = trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+      }
+      
+      return (grossPnl + hedgeGrossPnl) - (tradeCharges + hedgeCharges) < 0
     }).reduce((sum, trade) => {
       const grossPnl = (trade.exitPrice! - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
       const tradeCharges = trade.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-      const hedgeCharges = trade.hedgePosition?.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
-      return sum + grossPnl - (tradeCharges + hedgeCharges)
+      
+      // Calculate hedge P&L
+      let hedgeGrossPnl = 0
+      let hedgeCharges = 0
+      if (trade.hedgePosition && trade.hedgePosition.exitPrice) {
+        hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+        hedgeCharges = trade.hedgePosition.charges?.reduce((chargeSum, charge) => chargeSum + charge.amount, 0) || 0
+      }
+      
+      return sum + (grossPnl + hedgeGrossPnl) - (tradeCharges + hedgeCharges)
     }, 0))
 
     const profitFactor = totalLosses > 0 ? totalWins / totalLosses : 0
@@ -312,13 +386,8 @@ export async function GET(request: NextRequest) {
         // Calculate hedge position P&L if exists
         let hedgeNetPnl = 0
         if (trade.hedgePosition && trade.hedgePosition.exitDate && trade.hedgePosition.exitPrice) {
-          // Hedge position P&L calculation (opposite to main position)
-          let hedgeGrossPnl = 0
-          if (trade.hedgePosition.position === 'BUY') {
-            hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
-          } else {
-            hedgeGrossPnl = (trade.hedgePosition.entryPrice - trade.hedgePosition.exitPrice) * trade.hedgePosition.quantity
-          }
+          // Hedge P&L calculation: exit - entry (regardless of position)
+          const hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
           hedgeNetPnl = hedgeGrossPnl - (trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0)
         }
         
@@ -367,8 +436,16 @@ export async function GET(request: NextRequest) {
           if (!trade.exitPrice) return false
           const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
           const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-          const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
-          return grossPnl - (tradeCharges + hedgeCharges) > 0
+          
+          // Calculate hedge P&L
+          let hedgeGrossPnl = 0
+          let hedgeCharges = 0
+          if (trade.hedgePosition && trade.hedgePosition.exitPrice) {
+            hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+            hedgeCharges = trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+          }
+          
+          return (grossPnl + hedgeGrossPnl) - (tradeCharges + hedgeCharges) > 0
         }).length
 
         const winRate = instrumentTrades.length > 0 ? (instrumentWinningTrades / instrumentTrades.length) * 100 : 0
@@ -716,13 +793,8 @@ async function calculateCurrentWeekPerformance(instrumentType: string | null) {
         // Calculate hedge position P&L if exists
         let hedgeNetPnl = 0
         if (trade.hedgePosition && trade.hedgePosition.exitDate && trade.hedgePosition.exitPrice) {
-          // Hedge position P&L calculation (opposite to main position)
-          let hedgeGrossPnl = 0
-          if (trade.hedgePosition.position === 'BUY') {
-            hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
-          } else {
-            hedgeGrossPnl = (trade.hedgePosition.entryPrice - trade.hedgePosition.exitPrice) * trade.hedgePosition.quantity
-          }
+          // Hedge P&L calculation: exit - entry (regardless of position)
+          const hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
           hedgeNetPnl = hedgeGrossPnl - (trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0)
         }
         
