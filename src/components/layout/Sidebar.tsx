@@ -23,7 +23,13 @@ import {
   Clock,
   Shield,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Activity,
+  HeartCrack,
+  BrainCircuit,
+  Target as TargetIcon,
+  Zap,
+  Moon
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -66,6 +72,45 @@ const analyticsSubItems = [
     href: '/analytics/comparison',
     icon: TrendingUp,
     description: 'Performance comparison & benchmarks'
+  }
+]
+
+const psychologySubItems = [
+  {
+    name: 'Overview',
+    href: '/psychology',
+    icon: Brain,
+    description: 'Psychology dashboard overview'
+  },
+  {
+    name: 'Psychological Factors',
+    href: '/psychology/factors',
+    icon: Activity,
+    description: 'Physical & mental state analysis'
+  },
+  {
+    name: 'Behavioral Patterns',
+    href: '/psychology/behavioral',
+    icon: TargetIcon,
+    description: 'Trading behavior analysis'
+  },
+  {
+    name: 'Emotional Analysis',
+    href: '/psychology/emotional',
+    icon: HeartCrack,
+    description: 'Emotional state & impact'
+  },
+  {
+    name: 'P&L Correlations',
+    href: '/psychology/correlations',
+    icon: BrainCircuit,
+    description: 'Psychology vs performance'
+  },
+  {
+    name: 'Insights & Recommendations',
+    href: '/psychology/insights',
+    icon: Zap,
+    description: 'AI insights & recommendations'
   }
 ]
 
@@ -118,7 +163,8 @@ const navigationItems = [
     name: 'Psychology',
     href: '/psychology',
     icon: Brain,
-    description: 'Trading psychology analysis'
+    description: 'Trading psychology analysis',
+    subItems: psychologySubItems
   },
   {
     name: 'Settings',
@@ -136,7 +182,7 @@ const navigationItems = [
 
 export function Sidebar({ className }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const [expandedItems, setExpandedItems] = useState<string[]>(['analytics'])
+  const [expandedItems, setExpandedItems] = useState<string[]>(['analytics', 'psychology'])
   const pathname = usePathname()
 
   const toggleExpanded = (itemName: string) => {

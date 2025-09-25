@@ -65,6 +65,27 @@ model Trade {
   isDraft                 Boolean             @default(false)
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
+  analysisTime            Int?
+  copingMechanisms        String?
+  decisionTime            Int?
+  emotionalTriggers       String?
+  energyLevel             Int?
+  focusLevel              Int?
+  fomoLevel               Int?
+  impulsiveTrading        Boolean?
+  internetIssues          Boolean?
+  learningFromMistakes    Boolean?
+  marketSentiment         String?
+  meditationPractice      Boolean?
+  newsImpact              String?
+  overconfidence          Boolean?
+  postTradeMood           String?
+  preTradeMood            String?
+  revengeTrading          Boolean?
+  sleepQuality            Int?
+  socialMediaInfluence    Boolean?
+  strategyDeviation       String?
+  stressLevel             Int?
   hedgePosition           HedgePosition?
   optionsTrade            OptionsTrade?
   attachments             TradeAttachment[]
@@ -384,6 +405,24 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+model Prediction {
+  id              String               @id @default(cuid())
+  predictionDate  DateTime
+  strategy        String
+  direction       PredictionDirection
+  strategyNotes   String?
+  confidence      Int
+  notes           String?
+  status          PredictionStatus     @default(PENDING)
+  result          PredictionResult?
+  actualDirection PredictionDirection?
+  actualNotes     String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@map("predictions")
+}
+
 enum TradeType {
   INTRADAY
   POSITIONAL
@@ -438,24 +477,6 @@ enum PredictionStatus {
 enum PredictionResult {
   SUCCESS
   FAILURE
-}
-
-model Prediction {
-  id             String             @id @default(cuid())
-  predictionDate DateTime
-  strategy       String
-  direction      PredictionDirection
-  strategyNotes  String?
-  confidence     Int
-  notes          String?
-  status         PredictionStatus   @default(PENDING)
-  result         PredictionResult?
-  actualDirection PredictionDirection?
-  actualNotes    String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-
-  @@map("predictions")
 }
 
 enum PredictionDirection {

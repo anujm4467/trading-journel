@@ -99,7 +99,7 @@ export function usePsychology(initialFilters: PsychologyFilters = {}): UsePsycho
       if (filters.dateTo) params.append('dateTo', filters.dateTo)
       if (filters.strategy) params.append('strategy', filters.strategy)
 
-      const response = await fetch(`/api/psychology?${params.toString()}`)
+      const response = await fetch(`/api/psychology/analytics?${params.toString()}`)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)

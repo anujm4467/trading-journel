@@ -19,7 +19,10 @@ import {
   CheckCircle,
   Clock,
   Shield,
-  Brain
+  Brain,
+  Activity,
+  Target,
+  HeartCrack
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -92,6 +95,28 @@ const tradeFormSchema = z.object({
   showedFear: z.boolean().optional(),
   tradedAgainstTrend: z.boolean().optional(),
   psychologyNotes: z.string().optional(),
+  // Enhanced Psychology Fields
+  sleepQuality: z.number().min(1).max(10).optional(),
+  meditationPractice: z.boolean().optional(),
+  internetIssues: z.boolean().optional(),
+  stressLevel: z.number().min(1).max(10).optional(),
+  energyLevel: z.number().min(1).max(10).optional(),
+  focusLevel: z.number().min(1).max(10).optional(),
+  marketSentiment: z.string().optional(),
+  newsImpact: z.string().optional(),
+  socialMediaInfluence: z.boolean().optional(),
+  fomoLevel: z.number().min(1).max(10).optional(),
+  revengeTrading: z.boolean().optional(),
+  impulsiveTrading: z.boolean().optional(),
+  overconfidence: z.boolean().optional(),
+  analysisTime: z.number().min(1).optional(),
+  decisionTime: z.number().min(1).optional(),
+  preTradeMood: z.string().optional(),
+  postTradeMood: z.string().optional(),
+  learningFromMistakes: z.boolean().optional(),
+  strategyDeviation: z.string().optional(),
+  emotionalTriggers: z.string().optional(),
+  copingMechanisms: z.string().optional(),
 })
 
 type TradeFormSchema = z.infer<typeof tradeFormSchema>
@@ -227,6 +252,28 @@ export function TradeFormPage({ onSave, onSaveDraft, onCancel, isSubmitting = fa
     showedFear: false, // "Showed fear in this trade" - bad behavior (false = didn't show)
     tradedAgainstTrend: false, // "Traded against market trend" - bad behavior (false = didn't trade against)
     psychologyNotes: '',
+    // Enhanced Psychology Fields - Default values
+    sleepQuality: 7, // Default to good sleep quality
+    meditationPractice: false, // Default to no meditation
+    internetIssues: false, // Default to no internet issues
+    stressLevel: 5, // Default to moderate stress
+    energyLevel: 7, // Default to good energy
+    focusLevel: 7, // Default to good focus
+    marketSentiment: 'Neutral', // Default to neutral sentiment
+    newsImpact: 'Neutral', // Default to neutral news impact
+    socialMediaInfluence: false, // Default to no social media influence
+    fomoLevel: 3, // Default to low FOMO
+    revengeTrading: false, // Default to no revenge trading
+    impulsiveTrading: false, // Default to no impulsive trading
+    overconfidence: false, // Default to no overconfidence
+    analysisTime: 30, // Default to 30 minutes analysis time
+    decisionTime: 5, // Default to 5 minutes decision time
+    preTradeMood: 'Calm', // Default to calm mood
+    postTradeMood: 'Neutral', // Default to neutral mood
+    learningFromMistakes: false, // Default to not learning from mistakes
+    strategyDeviation: '', // Default to no strategy deviation
+    emotionalTriggers: '', // Default to no emotional triggers
+    copingMechanisms: '', // Default to no coping mechanisms
   }
 
   const form = useForm<TradeFormSchema>({
@@ -2029,6 +2076,334 @@ function BehavioralAnalysisStep({ form }: { form: ReturnType<typeof useForm<Trad
           </div>
         </Card>
       </div>
+
+      {/* Enhanced Psychology Fields */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Physical & Mental State */}
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <Activity className="h-5 w-5 text-indigo-600" />
+              Physical & Mental State
+            </h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Sleep Quality (1-10)
+                </Label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  {...form.register('sleepQuality', { valueAsNumber: true })}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Energy Level (1-10)
+                </Label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  {...form.register('energyLevel', { valueAsNumber: true })}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Stress Level (1-10)
+                </Label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  {...form.register('stressLevel', { valueAsNumber: true })}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Focus Level (1-10)
+                </Label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  {...form.register('focusLevel', { valueAsNumber: true })}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  FOMO Level (1-10)
+                </Label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  {...form.register('fomoLevel', { valueAsNumber: true })}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Market Context & External Factors */}
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              Market Context & External Factors
+            </h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Market Sentiment
+                </Label>
+                <select
+                  {...form.register('marketSentiment')}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="Bullish">🐂 Bullish</option>
+                  <option value="Bearish">🐻 Bearish</option>
+                  <option value="Neutral">😐 Neutral</option>
+                  <option value="Volatile">⚡ Volatile</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  News Impact
+                </Label>
+                <select
+                  {...form.register('newsImpact')}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="Positive">📈 Positive</option>
+                  <option value="Negative">📉 Negative</option>
+                  <option value="Neutral">➡️ Neutral</option>
+                  <option value="Mixed">🔄 Mixed</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Pre-Trade Mood
+                </Label>
+                <select
+                  {...form.register('preTradeMood')}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="Excited">😄 Excited</option>
+                  <option value="Calm">😌 Calm</option>
+                  <option value="Anxious">😰 Anxious</option>
+                  <option value="Confident">💪 Confident</option>
+                  <option value="Frustrated">😤 Frustrated</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Post-Trade Mood
+                </Label>
+                <select
+                  {...form.register('postTradeMood')}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="Satisfied">😊 Satisfied</option>
+                  <option value="Regretful">😔 Regretful</option>
+                  <option value="Neutral">😐 Neutral</option>
+                  <option value="Proud">🎉 Proud</option>
+                  <option value="Disappointed">😞 Disappointed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Trading Behavior & Decision Making */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Time Analysis */}
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-purple-600" />
+              Time Analysis
+            </h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Analysis Time (minutes)
+                </Label>
+                <input
+                  type="number"
+                  min="1"
+                  {...form.register('analysisTime', { valueAsNumber: true })}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Decision Time (minutes)
+                </Label>
+                <input
+                  type="number"
+                  min="1"
+                  {...form.register('decisionTime', { valueAsNumber: true })}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Practice & External Factors */}
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <Target className="h-5 w-5 text-orange-600" />
+              Practice & External Factors
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="meditationPractice"
+                  {...form.register('meditationPractice')}
+                  className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+                />
+                <Label htmlFor="meditationPractice" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Did you meditate today?
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="internetIssues"
+                  {...form.register('internetIssues')}
+                  className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+                />
+                <Label htmlFor="internetIssues" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Faced internet connectivity issues?
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="socialMediaInfluence"
+                  {...form.register('socialMediaInfluence')}
+                  className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+                />
+                <Label htmlFor="socialMediaInfluence" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Influenced by social media/news
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="learningFromMistakes"
+                  {...form.register('learningFromMistakes')}
+                  className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+                />
+                <Label htmlFor="learningFromMistakes" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Learned from previous mistakes
+                </Label>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Emotional Trading Patterns */}
+      <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+            <HeartCrack className="h-5 w-5 text-red-600" />
+            Emotional Trading Patterns
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="revengeTrading"
+                {...form.register('revengeTrading')}
+                className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500"
+              />
+              <Label htmlFor="revengeTrading" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Revenge Trading
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="impulsiveTrading"
+                {...form.register('impulsiveTrading')}
+                className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500"
+              />
+              <Label htmlFor="impulsiveTrading" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Impulsive Trading
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="overconfidence"
+                {...form.register('overconfidence')}
+                className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500"
+              />
+              <Label htmlFor="overconfidence" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Overconfident
+              </Label>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Detailed Reflection */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-indigo-600" />
+              Strategy Deviation Reason
+            </h3>
+            <Textarea
+              {...form.register('strategyDeviation')}
+              placeholder="If you deviated from your strategy, what was the reason? (e.g., market conditions, emotions, news, etc.)"
+              className="min-h-[80px] resize-none border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500"
+            />
+          </div>
+        </Card>
+
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <Brain className="h-5 w-5 text-purple-600" />
+              Emotional Triggers
+            </h3>
+            <Textarea
+              {...form.register('emotionalTriggers')}
+              placeholder="What triggered your emotions during this trade? (e.g., news, social media, previous losses, etc.)"
+              className="min-h-[80px] resize-none border-gray-200 dark:border-gray-700 focus:border-purple-500 focus:ring-purple-500"
+            />
+          </div>
+        </Card>
+      </div>
+
+      <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+            <Shield className="h-5 w-5 text-green-600" />
+            Coping Mechanisms
+          </h3>
+          <Textarea
+            {...form.register('copingMechanisms')}
+            placeholder="How did you cope with stress or negative emotions during this trade? (e.g., deep breathing, taking breaks, etc.)"
+            className="min-h-[80px] resize-none border-gray-200 dark:border-gray-700 focus:border-green-500 focus:ring-green-500"
+          />
+        </div>
+      </Card>
 
       {/* Psychology Notes */}
       <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg border border-white/20">
