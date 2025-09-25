@@ -475,9 +475,9 @@ export function DashboardOverview() {
                     />
                     <Bar 
                       dataKey="pnl" 
-                      fill={(entry) => entry.isProfit ? "url(#weeklyProfitGradient)" : "url(#weeklyLossGradient)"}
+                      fill="#10b981"
                       radius={[4, 4, 0, 0]}
-                      stroke={(entry) => entry.isProfit ? "#10b981" : "#ef4444"}
+                      stroke="#10b981"
                       strokeWidth={1}
                     />
                   </ComposedChart>
