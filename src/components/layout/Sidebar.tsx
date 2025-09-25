@@ -182,7 +182,7 @@ const navigationItems = [
 
 export function Sidebar({ className }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const [expandedItems, setExpandedItems] = useState<string[]>(['analytics', 'psychology'])
+  const [expandedItems, setExpandedItems] = useState<string[]>([])
   const pathname = usePathname()
 
   const toggleExpanded = (itemName: string) => {

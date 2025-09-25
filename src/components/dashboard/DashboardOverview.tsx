@@ -118,20 +118,6 @@ export function DashboardOverview() {
   
   return (
     <div className="space-y-8 p-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Trading Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Track your trading performance and analyze your strategies
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="text-sm bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700">
-            Last updated: {new Date().toLocaleTimeString()}
-          </Badge>
-        </div>
-      </div>
 
       {/* Filters */}
       <DashboardFilters
@@ -142,30 +128,30 @@ export function DashboardOverview() {
       />
 
       {/* Key Metrics Cards */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-7">
         <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Trades</CardTitle>
-            <BarChart3 className="h-4 w-4 text-blue-500" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+            <CardTitle className="text-xs font-medium text-gray-600 dark:text-gray-400">Total Trades</CardTitle>
+            <BarChart3 className="h-3 w-3 text-blue-500" />
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{data.overview.totalTrades.toLocaleString()}</div>
-            <p className="text-sm text-muted-foreground mt-1">
+          <CardContent className="pt-0 px-3 pb-3">
+            <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{data.overview.totalTrades.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">
               {timeframe === 'Today' ? 'Today' : `${timeframe} period`} trades
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Net P&L</CardTitle>
-            <DollarSign className={`h-4 w-4 ${data.overview.totalNetPnl >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+            <CardTitle className="text-xs font-medium text-gray-600 dark:text-gray-400">Net P&L</CardTitle>
+            <DollarSign className={`h-3 w-3 ${data.overview.totalNetPnl >= 0 ? 'text-green-500' : 'text-red-500'}`} />
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className={`text-3xl font-bold ${data.overview.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+          <CardContent className="pt-0 px-3 pb-3">
+            <div className={`text-lg font-bold ${data.overview.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {data.overview.totalNetPnl >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl).toLocaleString()}
             </div>
-            <div className="flex items-center text-sm mt-1">
+            <div className="flex items-center text-xs mt-1">
               {data.overview.totalNetPnl >= 0 ? (
                 <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
               ) : (
@@ -180,13 +166,13 @@ export function DashboardOverview() {
         </Card>
 
         <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Win Rate</CardTitle>
-            <Target className="h-4 w-4 text-blue-500" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+            <CardTitle className="text-xs font-medium text-gray-600 dark:text-gray-400">Win Rate</CardTitle>
+            <Target className="h-3 w-3 text-blue-500" />
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{data.overview.winRate.toFixed(1)}%</div>
-            <div className="flex items-center text-sm mt-1">
+          <CardContent className="pt-0 px-3 pb-3">
+            <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{data.overview.winRate.toFixed(1)}%</div>
+            <div className="flex items-center text-xs mt-1">
               <span className="text-gray-600 dark:text-gray-400">
                 {data.overview.winningTrades} wins / {data.overview.losingTrades} losses
               </span>
@@ -195,35 +181,32 @@ export function DashboardOverview() {
         </Card>
 
         <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Best Trade</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+            <CardTitle className="text-xs font-medium text-gray-600 dark:text-gray-400">Best Trade</CardTitle>
+            <TrendingUp className="h-3 w-3 text-green-500" />
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+          <CardContent className="pt-0 px-3 pb-3">
+            <div className="text-lg font-bold text-green-600 dark:text-green-400">
               +₹{Math.round(data.overview.averageWin).toLocaleString()}
             </div>
-            <div className="flex items-center text-sm mt-1">
+            <div className="flex items-center text-xs mt-1">
               <span className="text-gray-600 dark:text-gray-400">
                 highest single trade
               </span>
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Additional Metrics Cards */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Gross P&L</CardTitle>
-            <TrendingUp className="h-4 w-4 text-orange-500" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+            <CardTitle className="text-xs font-medium text-gray-600 dark:text-gray-400">Gross P&L</CardTitle>
+            <TrendingUp className="h-3 w-3 text-orange-500" />
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className={`text-3xl font-bold ${data.overview.totalGrossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+          <CardContent className="pt-0 px-3 pb-3">
+            <div className={`text-lg font-bold ${data.overview.totalGrossPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {data.overview.totalGrossPnl >= 0 ? '+' : ''}₹{Math.round(data.overview.totalGrossPnl).toLocaleString()}
             </div>
-            <div className="flex items-center text-sm mt-1">
+            <div className="flex items-center text-xs mt-1">
               <span className="text-gray-600 dark:text-gray-400">
                 before charges
               </span>
@@ -232,15 +215,15 @@ export function DashboardOverview() {
         </Card>
 
         <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Charges</CardTitle>
-            <BarChart3 className="h-4 w-4 text-red-500" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+            <CardTitle className="text-xs font-medium text-gray-600 dark:text-gray-400">Total Charges</CardTitle>
+            <BarChart3 className="h-3 w-3 text-red-500" />
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+          <CardContent className="pt-0 px-3 pb-3">
+            <div className="text-lg font-bold text-red-600 dark:text-red-400">
               -₹{Math.round(data.overview.totalCharges).toLocaleString()}
             </div>
-            <div className="flex items-center text-sm mt-1">
+            <div className="flex items-center text-xs mt-1">
               <span className="text-gray-600 dark:text-gray-400">
                 STT, Exchange, SEBI, Stamp Duty
               </span>
@@ -249,15 +232,15 @@ export function DashboardOverview() {
         </Card>
 
         <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Worst Trade</CardTitle>
-            <TrendingUp className="h-4 w-4 text-red-500" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+            <CardTitle className="text-xs font-medium text-gray-600 dark:text-gray-400">Worst Trade</CardTitle>
+            <TrendingUp className="h-3 w-3 text-red-500" />
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+          <CardContent className="pt-0 px-3 pb-3">
+            <div className="text-lg font-bold text-red-600 dark:text-red-400">
               -₹{Math.round(Math.abs(data.overview.averageLoss)).toLocaleString()}
             </div>
-            <div className="flex items-center text-sm mt-1">
+            <div className="flex items-center text-xs mt-1">
               <span className="text-gray-600 dark:text-gray-400">
                 largest single loss
               </span>
@@ -265,83 +248,7 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Profit Factor</CardTitle>
-            <Target className="h-4 w-4 text-indigo-500" />
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className={`text-3xl font-bold ${data.overview.profitFactor >= 1 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {data.overview.profitFactor.toFixed(2)}
-            </div>
-            <div className="flex items-center text-sm mt-1">
-              <span className="text-gray-600 dark:text-gray-400">
-                {data.overview.profitFactor >= 1 ? 'Profitable' : 'Loss-making'} strategy
-              </span>
-            </div>
-          </CardContent>
-        </Card>
       </div>
-
-      {/* Charges Breakdown Card */}
-      {data.chargesBreakdown && data.chargesBreakdown.length > 0 && (
-        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-0 shadow-lg">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-gray-100">
-              <BarChart3 className="h-5 w-5 text-red-600" />
-              Charges Breakdown
-            </CardTitle>
-            <CardDescription className="text-gray-600 dark:text-gray-400">
-              Detailed breakdown of all trading charges
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {data.chargesBreakdown.map((charge, index) => {
-                const chargeTypeLabels: Record<string, string> = {
-                  'BROKERAGE': 'Brokerage',
-                  'STT': 'Securities Transaction Tax',
-                  'EXCHANGE': 'Exchange Charges',
-                  'SEBI': 'SEBI Charges',
-                  'STAMP_DUTY': 'Stamp Duty',
-                  'CUSTOM': 'Custom Charges'
-                }
-                
-                const chargeColors: Record<string, string> = {
-                  'BROKERAGE': 'text-blue-600 dark:text-blue-400',
-                  'STT': 'text-green-600 dark:text-green-400',
-                  'EXCHANGE': 'text-purple-600 dark:text-purple-400',
-                  'SEBI': 'text-orange-600 dark:text-orange-400',
-                  'STAMP_DUTY': 'text-red-600 dark:text-red-400',
-                  'CUSTOM': 'text-gray-600 dark:text-gray-400'
-                }
-
-                return (
-                  <div key={index} className="p-4 rounded-lg bg-gray-50/50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-                        {chargeTypeLabels[charge.type] || charge.type}
-                      </h4>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {charge.count} charges
-                      </span>
-                    </div>
-                    <div className={`text-2xl font-bold ${chargeColors[charge.type] || 'text-gray-600 dark:text-gray-400'}`}>
-                      ₹{Math.round(charge.amount).toLocaleString()}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {data.overview.totalCharges > 0 ? 
-                        `${((charge.amount / data.overview.totalCharges) * 100).toFixed(1)}% of total charges` : 
-                        '0% of total charges'
-                      }
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Charts and Analytics */}
       <div className="grid gap-6 lg:grid-cols-7">
@@ -635,6 +542,66 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Charges Breakdown Card */}
+      {data.chargesBreakdown && data.chargesBreakdown.length > 0 && (
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-gray-100">
+              <BarChart3 className="h-5 w-5 text-red-600" />
+              Charges Breakdown
+            </CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">
+              Detailed breakdown of all trading charges
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {data.chargesBreakdown.map((charge, index) => {
+                const chargeTypeLabels: Record<string, string> = {
+                  'BROKERAGE': 'Brokerage',
+                  'STT': 'Securities Transaction Tax',
+                  'EXCHANGE': 'Exchange Charges',
+                  'SEBI': 'SEBI Charges',
+                  'STAMP_DUTY': 'Stamp Duty',
+                  'CUSTOM': 'Custom Charges'
+                }
+                
+                const chargeColors: Record<string, string> = {
+                  'BROKERAGE': 'text-blue-600 dark:text-blue-400',
+                  'STT': 'text-green-600 dark:text-green-400',
+                  'EXCHANGE': 'text-purple-600 dark:text-purple-400',
+                  'SEBI': 'text-orange-600 dark:text-orange-400',
+                  'STAMP_DUTY': 'text-red-600 dark:text-red-400',
+                  'CUSTOM': 'text-gray-600 dark:text-gray-400'
+                }
+
+                return (
+                  <div key={index} className="p-4 rounded-lg bg-gray-50/50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                        {chargeTypeLabels[charge.type] || charge.type}
+                      </h4>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {charge.count} charges
+                      </span>
+                    </div>
+                    <div className={`text-2xl font-bold ${chargeColors[charge.type] || 'text-gray-600 dark:text-gray-400'}`}>
+                      ₹{Math.round(charge.amount).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {data.overview.totalCharges > 0 ? 
+                        `${((charge.amount / data.overview.totalCharges) * 100).toFixed(1)}% of total charges` : 
+                        '0% of total charges'
+                      }
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
     </div>
   )
