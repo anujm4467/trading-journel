@@ -74,31 +74,8 @@ export async function GET(request: NextRequest) {
       where.entryDate = dateFilter
     }
     
-    // Handle strategy filtering - support both single strategy and multiple selected strategies
-    if (selectedStrategies) {
-      try {
-        const strategiesArray = JSON.parse(selectedStrategies)
-        if (Array.isArray(strategiesArray) && strategiesArray.length > 0) {
-          where.strategyTags = {
-            some: {
-              strategyTag: {
-                name: { in: strategiesArray }
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing selectedStrategies:', error)
-      }
-    } else if (strategy) {
-      where.strategyTags = {
-        some: {
-          strategyTag: {
-            name: { contains: strategy }
-          }
-        }
-      }
-    }
+    // Note: Strategy filtering is handled separately for strategy performance (uses all data)
+    // and main analytics (uses time-filtered data)
     
     // Handle instrument type filtering
     if (instrumentType && instrumentType !== 'ALL') {
@@ -210,12 +187,42 @@ export async function GET(request: NextRequest) {
 
     const profitFactor = totalLosses > 0 ? totalWins / totalLosses : 0
 
-    // Calculate strategy performance - only if we have strategy filters or want all strategies
-    const strategyPerformanceWhere = { ...where }
-    if (!selectedStrategies && !strategy) {
-      // If no strategy filter, only get trades that have strategy tags
+    // Calculate strategy performance - use ALL data (no time filter) for strategy distribution
+    const strategyPerformanceWhere: Record<string, unknown> = {}
+    
+    // Only apply instrument type filter for strategy performance
+    if (instrumentType && instrumentType !== 'ALL') {
+      strategyPerformanceWhere.instrument = instrumentType
+    }
+    
+    // Only get trades that have strategy tags
+    strategyPerformanceWhere.strategyTags = {
+      some: {}
+    }
+    
+    // Handle strategy filtering - support both single strategy and multiple selected strategies
+    if (selectedStrategies) {
+      try {
+        const strategiesArray = JSON.parse(selectedStrategies)
+        if (Array.isArray(strategiesArray) && strategiesArray.length > 0) {
+          strategyPerformanceWhere.strategyTags = {
+            some: {
+              strategyTag: {
+                name: { in: strategiesArray }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing selectedStrategies:', error)
+      }
+    } else if (strategy) {
       strategyPerformanceWhere.strategyTags = {
-        some: {}
+        some: {
+          strategyTag: {
+            name: { contains: strategy }
+          }
+        }
       }
     }
     
@@ -279,7 +286,17 @@ export async function GET(request: NextRequest) {
         exitPrice: true,
         quantity: true,
         position: true,
-        charges: true
+        charges: true,
+        hedgePosition: {
+          select: {
+            exitDate: true,
+            entryPrice: true,
+            exitPrice: true,
+            quantity: true,
+            position: true,
+            charges: true
+          }
+        }
       }
     })
 
@@ -287,15 +304,36 @@ export async function GET(request: NextRequest) {
     dailyPnl.forEach(trade => {
       if (trade.exitDate && trade.exitPrice) {
         const date = trade.exitDate.toISOString().split('T')[0]
+        
+        // Calculate main trade P&L
         const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
-        const netPnl = grossPnl - (trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0)
-        dailyPnlMap.set(date, (dailyPnlMap.get(date) || 0) + netPnl)
+        const mainNetPnl = grossPnl - (trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0)
+        
+        // Calculate hedge position P&L if exists
+        let hedgeNetPnl = 0
+        if (trade.hedgePosition && trade.hedgePosition.exitDate && trade.hedgePosition.exitPrice) {
+          // Hedge position P&L calculation (opposite to main position)
+          let hedgeGrossPnl = 0
+          if (trade.hedgePosition.position === 'BUY') {
+            hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+          } else {
+            hedgeGrossPnl = (trade.hedgePosition.entryPrice - trade.hedgePosition.exitPrice) * trade.hedgePosition.quantity
+          }
+          hedgeNetPnl = hedgeGrossPnl - (trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0)
+        }
+        
+        // Combine main trade and hedge P&L
+        const totalNetPnl = mainNetPnl + hedgeNetPnl
+        dailyPnlMap.set(date, (dailyPnlMap.get(date) || 0) + totalNetPnl)
       }
     })
 
     const dailyPnlData = Array.from(dailyPnlMap.entries())
       .map(([date, pnl]) => ({ date, pnl }))
       .sort((a, b) => a.date.localeCompare(b.date))
+
+    // Calculate current week performance (always show current week regardless of time filter)
+    const currentWeekData = await calculateCurrentWeekPerformance(instrumentType)
 
     // Calculate instrument type performance
     const instrumentPerformance = await prisma.trade.groupBy({
@@ -412,6 +450,9 @@ export async function GET(request: NextRequest) {
     // Calculate weekday analysis
     const weekdayAnalysis = calculateWeekdayAnalysis(trades)
 
+    // Calculate overall stats (without time filter) for Quick Stats
+    const overallStats = await calculateOverallStats(instrumentType)
+
     return NextResponse.json({
       overview: {
         totalTrades,
@@ -430,13 +471,15 @@ export async function GET(request: NextRequest) {
       instrumentPerformance: instrumentPerformanceData,
       chargesBreakdown: chargesBreakdownData,
       dailyPnlData,
+      weeklyPerformanceData: currentWeekData,
       weekdayAnalysis,
       riskData: {
         maxDrawdown: Math.round(maxDrawdown * 100) / 100,
         sharpeRatio: Math.round(sharpeRatio * 100) / 100,
         avgRiskReward: Math.round(avgRiskReward * 100) / 100
       },
-      periodAnalysis
+      periodAnalysis,
+      overallStats
     })
   } catch (error) {
     console.error('Error fetching analytics:', error)
@@ -596,6 +639,267 @@ function calculatePeriodAnalysis(trades: Trade[], timeRange: string) {
     mostLosing: mostLosing.pnl < 0 ? mostLosing : null,
     totalTrades,
     totalPnl
+  }
+}
+
+// Helper function to calculate current week performance
+async function calculateCurrentWeekPerformance(instrumentType: string | null) {
+  try {
+    // Get current week start and end dates (Monday to Friday only)
+    const now = new Date()
+    const currentDay = now.getDay() // 0 = Sunday, 1 = Monday, etc.
+    
+    // Calculate Monday of current week
+    const weekStart = new Date(now)
+    const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1 // Handle Sunday as 6 days from Monday
+    weekStart.setDate(now.getDate() - daysFromMonday)
+    weekStart.setHours(0, 0, 0, 0)
+    
+    // Calculate Friday of current week
+    const weekEnd = new Date(weekStart)
+    weekEnd.setDate(weekStart.getDate() + 4) // Friday is 4 days after Monday
+    weekEnd.setHours(23, 59, 59, 999)
+
+    // Build where clause for current week (Monday to Friday only)
+    const where: Record<string, unknown> = {
+      exitDate: {
+        gte: weekStart,
+        lte: weekEnd
+      }
+    }
+    
+    // Only apply instrument type filter
+    if (instrumentType && instrumentType !== 'ALL') {
+      where.instrument = instrumentType
+    }
+
+    // Get trades for current week
+    const weekTrades = await prisma.trade.findMany({
+      where,
+      select: {
+        exitDate: true,
+        entryPrice: true,
+        exitPrice: true,
+        quantity: true,
+        position: true,
+        charges: true,
+        hedgePosition: {
+          select: {
+            exitDate: true,
+            entryPrice: true,
+            exitPrice: true,
+            quantity: true,
+            position: true,
+            charges: true
+          }
+        }
+      }
+    })
+
+    // Group by day of week
+    const dayMap = new Map<string, { pnl: number; trades: number }>()
+    
+    // Initialize trading days only (Monday to Friday)
+    const tradingDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+    tradingDays.forEach(day => {
+      dayMap.set(day, { pnl: 0, trades: 0 })
+    })
+
+    weekTrades.forEach(trade => {
+      if (trade.exitDate && trade.exitPrice) {
+        const dayName = trade.exitDate.toLocaleDateString('en-US', { weekday: 'short' })
+        
+        // Calculate main trade P&L
+        const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
+        const mainNetPnl = grossPnl - (trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0)
+        
+        // Calculate hedge position P&L if exists
+        let hedgeNetPnl = 0
+        if (trade.hedgePosition && trade.hedgePosition.exitDate && trade.hedgePosition.exitPrice) {
+          // Hedge position P&L calculation (opposite to main position)
+          let hedgeGrossPnl = 0
+          if (trade.hedgePosition.position === 'BUY') {
+            hedgeGrossPnl = (trade.hedgePosition.exitPrice - trade.hedgePosition.entryPrice) * trade.hedgePosition.quantity
+          } else {
+            hedgeGrossPnl = (trade.hedgePosition.entryPrice - trade.hedgePosition.exitPrice) * trade.hedgePosition.quantity
+          }
+          hedgeNetPnl = hedgeGrossPnl - (trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0)
+        }
+        
+        // Combine main trade and hedge P&L
+        const totalNetPnl = mainNetPnl + hedgeNetPnl
+        
+        const existing = dayMap.get(dayName) || { pnl: 0, trades: 0 }
+        existing.pnl += totalNetPnl
+        existing.trades += 1
+        dayMap.set(dayName, existing)
+      }
+    })
+
+    // Determine which days to show based on current day
+    let daysToShow = tradingDays
+    const today = new Date()
+    const todayDay = today.getDay() // 0 = Sunday, 1 = Monday, etc.
+    
+    // If today is weekend, show all trading days
+    // If today is a trading day, only show up to today
+    if (todayDay >= 1 && todayDay <= 5) { // Monday to Friday
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      const todayName = dayNames[todayDay]
+      const todayIndex = tradingDays.indexOf(todayName)
+      if (todayIndex !== -1) {
+        daysToShow = tradingDays.slice(0, todayIndex + 1)
+      }
+    }
+
+    // Return only the days that should be shown
+    return daysToShow.map(day => {
+      const data = dayMap.get(day) || { pnl: 0, trades: 0 }
+      return {
+        day,
+        pnl: Math.round(data.pnl * 100) / 100,
+        trades: data.trades
+      }
+    })
+  } catch (error) {
+    console.error('Error calculating current week performance:', error)
+    // Return empty data for trading days only
+    const tradingDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+    return tradingDays.map(day => ({
+      day,
+      pnl: 0,
+      trades: 0
+    }))
+  }
+}
+
+// Helper function to calculate overall stats (without time filter)
+async function calculateOverallStats(instrumentType: string | null) {
+  try {
+    // Build where clause for overall stats (no time filter)
+    const where: Record<string, unknown> = {}
+    
+    // Only apply instrument type filter
+    if (instrumentType && instrumentType !== 'ALL') {
+      where.instrument = instrumentType
+    }
+
+    // Get all trades for overall calculations
+    const allTrades = await prisma.trade.findMany({
+      where,
+      include: {
+        charges: true,
+        hedgePosition: {
+          include: {
+            charges: true
+          }
+        }
+      }
+    })
+
+    // Calculate overall performance metrics
+    const totalTrades = allTrades.length
+    const winningTrades = allTrades.filter(trade => {
+      if (!trade.exitPrice) return false
+      const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
+      const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+      const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+      return grossPnl - (tradeCharges + hedgeCharges) > 0
+    }).length
+
+    const losingTrades = allTrades.filter(trade => {
+      if (!trade.exitPrice) return false
+      const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
+      const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+      const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+      return grossPnl - (tradeCharges + hedgeCharges) < 0
+    }).length
+
+    const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0
+
+    // Calculate overall P&L
+    let totalGrossPnl = 0
+    let totalCharges = 0
+    let totalNetPnl = 0
+
+    allTrades.forEach(trade => {
+      if (trade.exitPrice) {
+        const grossPnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * (trade.position === 'BUY' ? 1 : -1)
+        const tradeCharges = trade.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+        const hedgeCharges = trade.hedgePosition?.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+        const totalTradeCharges = tradeCharges + hedgeCharges
+        
+        totalGrossPnl += grossPnl
+        totalCharges += totalTradeCharges
+        totalNetPnl += grossPnl - totalTradeCharges
+      }
+    })
+
+    // Calculate average trade P&L
+    const avgTrade = totalTrades > 0 ? totalNetPnl / totalTrades : 0
+
+    // Find strategy with most trades
+    const strategyTrades = await prisma.trade.findMany({
+      where: {
+        ...where,
+        strategyTags: {
+          some: {}
+        }
+      },
+      include: {
+        strategyTags: {
+          include: {
+            strategyTag: true
+          }
+        }
+      }
+    })
+
+    const strategyCountMap = new Map<string, number>()
+    strategyTrades.forEach(trade => {
+      trade.strategyTags.forEach(tag => {
+        const strategyName = tag.strategyTag.name
+        strategyCountMap.set(strategyName, (strategyCountMap.get(strategyName) || 0) + 1)
+      })
+    })
+
+    const maxTradesStrategy = strategyCountMap.size > 0 
+      ? Array.from(strategyCountMap.entries()).reduce((max, [strategy, count]) => 
+          count > max.count ? { strategy, count } : max, 
+          { strategy: '', count: 0 }
+        )
+      : { strategy: 'No strategies', count: 0 }
+
+    return {
+      totalTrades,
+      winningTrades,
+      losingTrades,
+      winRate: Math.round(winRate * 100) / 100,
+      totalGrossPnl: Math.round(totalGrossPnl * 100) / 100,
+      totalCharges: Math.round(totalCharges * 100) / 100,
+      totalNetPnl: Math.round(totalNetPnl * 100) / 100,
+      avgTrade: Math.round(avgTrade * 100) / 100,
+      maxTradesStrategy: {
+        name: maxTradesStrategy.strategy,
+        count: maxTradesStrategy.count
+      }
+    }
+  } catch (error) {
+    console.error('Error calculating overall stats:', error)
+    return {
+      totalTrades: 0,
+      winningTrades: 0,
+      losingTrades: 0,
+      winRate: 0,
+      totalGrossPnl: 0,
+      totalCharges: 0,
+      totalNetPnl: 0,
+      avgTrade: 0,
+      maxTradesStrategy: {
+        name: 'No strategies',
+        count: 0
+      }
+    }
   }
 }
 

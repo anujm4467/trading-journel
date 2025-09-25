@@ -147,7 +147,7 @@ export default function TimeAnalysisPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
-              {data.weekdayAnalysis?.find(day => day.winRate === Math.max(...(data.weekdayAnalysis?.map(d => d.winRate) || [0])))?.dayOfWeek || 'N/A'}
+              {data.weekdayAnalysis?.find(day => day.winRate === Math.max(...(data.weekdayAnalysis?.map(d => d.winRate) || [0])))?.day || 'N/A'}
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-green-600 font-medium">
@@ -170,7 +170,7 @@ export default function TimeAnalysisPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600 dark:text-red-400 mb-1">
-              {data.weekdayAnalysis?.find(day => day.winRate === Math.min(...(data.weekdayAnalysis?.map(d => d.winRate) || [0])))?.dayOfWeek || 'N/A'}
+              {data.weekdayAnalysis?.find(day => day.winRate === Math.min(...(data.weekdayAnalysis?.map(d => d.winRate) || [0])))?.day || 'N/A'}
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-red-600 font-medium">
@@ -193,11 +193,11 @@ export default function TimeAnalysisPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1">
-              {data.weekdayAnalysis?.reduce((max, day) => day.totalTrades > max.totalTrades ? day : max, data.weekdayAnalysis[0] || { dayOfWeek: 'N/A', totalTrades: 0 })?.dayOfWeek || 'N/A'}
+              {data.weekdayAnalysis?.reduce((max, day) => day.trades > max.trades ? day : max, data.weekdayAnalysis[0] || { day: 'N/A', trades: 0 })?.day || 'N/A'}
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-purple-600 font-medium">
-                {data.weekdayAnalysis?.reduce((max, day) => day.totalTrades > max.totalTrades ? day : max, data.weekdayAnalysis[0] || { totalTrades: 0 })?.totalTrades || 0} trades
+                {data.weekdayAnalysis?.reduce((max, day) => day.trades > max.trades ? day : max, data.weekdayAnalysis[0] || { trades: 0 })?.trades || 0} trades
               </span>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
@@ -262,7 +262,7 @@ export default function TimeAnalysisPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <TimeAnalysis data={data.timeAnalysis || { dayOfWeek: {}, timeOfDay: {} }} />
+          <TimeAnalysis data={data.timeAnalysis || { day: {}, timeOfDay: {} }} />
         </CardContent>
       </Card>
 
@@ -288,14 +288,14 @@ export default function TimeAnalysisPage() {
                   {data.weekdayAnalysis
                     .sort((a, b) => b.winRate - a.winRate)
                     .map((day, index) => (
-                    <div key={day.dayOfWeek} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="font-medium">{day.dayOfWeek}</span>
+                    <div key={day.day} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span className="font-medium">{day.day}</span>
                       <div className="text-right">
                         <span className={`font-bold ${day.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>
                           {day.winRate.toFixed(1)}%
                         </span>
                         <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
-                          ({day.totalTrades} trades)
+                          ({day.trades} trades)
                         </span>
                       </div>
                     </div>
@@ -311,13 +311,13 @@ export default function TimeAnalysisPage() {
               {data.weekdayAnalysis && data.weekdayAnalysis.length > 0 ? (
                 <div className="space-y-3">
                   {data.weekdayAnalysis
-                    .sort((a, b) => b.totalTrades - a.totalTrades)
+                    .sort((a, b) => b.trades - a.trades)
                     .map((day, index) => (
-                    <div key={day.dayOfWeek} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="font-medium">{day.dayOfWeek}</span>
+                    <div key={day.day} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span className="font-medium">{day.day}</span>
                       <div className="text-right">
                         <span className="font-bold text-blue-600">
-                          {day.totalTrades} trades
+                          {day.trades} trades
                         </span>
                         <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
                           {day.winRate.toFixed(1)}% win rate

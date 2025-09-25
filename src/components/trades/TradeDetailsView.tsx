@@ -499,21 +499,56 @@ export function TradeDetailsView({ trade, onExit }: TradeDetailsViewProps) {
                     </span>
                   </div>
                 )}
-                {trade.hedgePosition.grossPnl !== null && trade.hedgePosition.grossPnl !== undefined && (
-                  <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
-                    <span className="text-slate-600 dark:text-slate-400 font-medium">Hedge Gross P&L</span>
-                    <span className={`font-bold ${trade.hedgePosition.grossPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ₹{trade.hedgePosition.grossPnl.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                {trade.hedgePosition.netPnl !== null && trade.hedgePosition.netPnl !== undefined && (
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-slate-600 dark:text-slate-400 font-medium">Hedge Net P&L</span>
-                    <span className={`font-bold text-lg ${trade.hedgePosition.netPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ₹{trade.hedgePosition.netPnl.toFixed(2)}
-                    </span>
-                  </div>
+                {trade.hedgePosition.exitPrice && (
+                  <>
+                    {(() => {
+                      // Recalculate hedge P&L correctly
+                      const hedgeEntryValue = trade.hedgePosition.entryPrice * trade.hedgePosition.quantity
+                      const hedgeExitValue = trade.hedgePosition.exitPrice * trade.hedgePosition.quantity
+                      let hedgeGrossPnl = 0
+                      
+                      if (trade.hedgePosition.position === 'BUY') {
+                        hedgeGrossPnl = hedgeExitValue - hedgeEntryValue
+                      } else {
+                        hedgeGrossPnl = hedgeEntryValue - hedgeExitValue
+                      }
+                      
+                      const hedgeCharges = trade.hedgePosition.charges?.reduce((sum, charge) => sum + charge.amount, 0) || 0
+                      const hedgeNetPnl = hedgeGrossPnl - hedgeCharges
+                      
+                      // Debug logging
+                      console.log('Hedge P&L Calculation:', {
+                        position: trade.hedgePosition.position,
+                        entryPrice: trade.hedgePosition.entryPrice,
+                        exitPrice: trade.hedgePosition.exitPrice,
+                        quantity: trade.hedgePosition.quantity,
+                        entryValue: hedgeEntryValue,
+                        exitValue: hedgeExitValue,
+                        calculatedGrossPnl: hedgeGrossPnl,
+                        hedgeCharges,
+                        hedgeNetPnl,
+                        storedGrossPnl: trade.hedgePosition.grossPnl,
+                        storedNetPnl: trade.hedgePosition.netPnl
+                      })
+                      
+                      return (
+                        <>
+                          <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
+                            <span className="text-slate-600 dark:text-slate-400 font-medium">Hedge Gross P&L</span>
+                            <span className={`font-bold ${hedgeGrossPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              ₹{hedgeGrossPnl.toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-2">
+                            <span className="text-slate-600 dark:text-slate-400 font-medium">Hedge Net P&L</span>
+                            <span className={`font-bold text-lg ${hedgeNetPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              ₹{hedgeNetPnl.toFixed(2)}
+                            </span>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </>
                 )}
               </div>
             </div>

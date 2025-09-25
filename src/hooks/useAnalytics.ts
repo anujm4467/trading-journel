@@ -103,6 +103,20 @@ export interface AnalyticsData {
     avgPnl: number
     winRate: number
   }>
+  overallStats?: {
+    totalTrades: number
+    winningTrades: number
+    losingTrades: number
+    winRate: number
+    totalGrossPnl: number
+    totalCharges: number
+    totalNetPnl: number
+    avgTrade: number
+    maxTradesStrategy: {
+      name: string
+      count: number
+    }
+  }
 }
 
 export interface UseAnalyticsReturn {
@@ -192,7 +206,7 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
           chargesBreakdown: analyticsData.chargesBreakdown || [],
           dailyPnlData: analyticsData.dailyPnlData || [],
           monthlyPerformanceData: generateMonthlyData(analyticsData.dailyPnlData || []),
-          weeklyPerformanceData: generateWeeklyData(analyticsData.dailyPnlData || []),
+          weeklyPerformanceData: analyticsData.weeklyPerformanceData || [],
           recentTrades: await getRecentTrades(filters),
           strategyDistribution: generateStrategyDistribution(analyticsData.strategyPerformance || []),
           timeAnalysis: generateTimeAnalysis(analyticsData.dailyPnlData || []),
@@ -202,7 +216,8 @@ export function useAnalytics(initialFilters: AnalyticsFilters = {}): UseAnalytic
             avgRiskReward: analyticsData.riskData?.avgRiskReward || 0
           },
           periodAnalysis: analyticsData.periodAnalysis,
-          weekdayAnalysis: analyticsData.weekdayAnalysis || []
+          weekdayAnalysis: analyticsData.weekdayAnalysis || [],
+          overallStats: analyticsData.overallStats
         }
 
         setData(transformedData)
@@ -301,32 +316,6 @@ function generateMonthlyData(dailyData: Array<{ date: string; pnl: number }>): A
   }))
 }
 
-// Helper function to generate weekly performance data
-function generateWeeklyData(dailyData: Array<{ date: string; pnl: number }>): Array<{
-  day: string
-  pnl: number
-  trades: number
-}> {
-  const weeklyMap = new Map<string, { pnl: number; trades: number }>()
-  
-  dailyData.forEach(day => {
-    const date = new Date(day.date)
-    const dayKey = date.toLocaleDateString('en-US', { weekday: 'short' })
-    
-    const existing = weeklyMap.get(dayKey) || { pnl: 0, trades: 0 }
-    existing.pnl += day.pnl
-    existing.trades += 1
-    weeklyMap.set(dayKey, existing)
-  })
-
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-  
-  return days.map(day => ({
-    day,
-    pnl: weeklyMap.get(day)?.pnl || 0,
-    trades: weeklyMap.get(day)?.trades || 0
-  }))
-}
 
 // Helper function to generate strategy distribution
 function generateStrategyDistribution(strategyPerformance: Array<{

@@ -147,7 +147,7 @@ export function Sidebar({ className }: SidebarProps) {
     )
   }
 
-  const isItemActive = (href: string, subItems?: any[]) => {
+  const isItemActive = (href: string, subItems?: { href: string; name: string; icon: React.ComponentType<{ className?: string }>; description: string }[]) => {
     if (pathname === href) return true
     if (subItems) {
       return subItems.some(subItem => pathname === subItem.href)

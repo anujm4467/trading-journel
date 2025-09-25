@@ -233,12 +233,10 @@ export default function ComparisonPage() {
                         <span className="ml-2 font-medium text-blue-600">{instrument.winRate.toFixed(1)}%</span>
                       </div>
                       <div>
-                        <span className="text-gray-600 dark:text-gray-400">Avg Win:</span>
-                        <span className="ml-2 font-medium text-green-600">+₹{Math.round(instrument.averageWin || 0).toLocaleString()}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600 dark:text-gray-400">Avg Loss:</span>
-                        <span className="ml-2 font-medium text-red-600">-₹{Math.round(Math.abs(instrument.averageLoss || 0)).toLocaleString()}</span>
+                        <span className="text-gray-600 dark:text-gray-400">Avg P&L:</span>
+                        <span className={`ml-2 font-medium ${instrument.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {instrument.pnl >= 0 ? '+' : ''}₹{Math.round(instrument.pnl / instrument.trades || 0).toLocaleString()}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -281,7 +279,7 @@ export default function ComparisonPage() {
           <CardContent>
             <div className="space-y-4">
               {data.strategyPerformance
-                .sort((a, b) => b.totalPnl - a.totalPnl)
+                .sort((a, b) => b.pnl - a.pnl)
                 .map((strategy, index) => (
                 <div key={strategy.strategy} className="flex justify-between items-center p-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-lg hover:shadow-md transition-all duration-200">
                   <div className="flex-1">
@@ -291,28 +289,26 @@ export default function ComparisonPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
                         <span className="text-gray-600 dark:text-gray-400">Total Trades:</span>
-                        <span className="ml-2 font-medium">{strategy.totalTrades}</span>
+                        <span className="ml-2 font-medium">{strategy.trades}</span>
                       </div>
                       <div>
                         <span className="text-gray-600 dark:text-gray-400">Win Rate:</span>
                         <span className="ml-2 font-medium text-blue-600">{strategy.winRate.toFixed(1)}%</span>
                       </div>
                       <div>
-                        <span className="text-gray-600 dark:text-gray-400">Avg Win:</span>
-                        <span className="ml-2 font-medium text-green-600">+₹{Math.round(strategy.averageWin).toLocaleString()}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600 dark:text-gray-400">Avg Loss:</span>
-                        <span className="ml-2 font-medium text-red-600">-₹{Math.round(Math.abs(strategy.averageLoss)).toLocaleString()}</span>
+                        <span className="text-gray-600 dark:text-gray-400">Avg P&L:</span>
+                        <span className={`ml-2 font-medium ${strategy.avgPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {strategy.avgPnl >= 0 ? '+' : ''}₹{Math.round(strategy.avgPnl).toLocaleString()}
+                        </span>
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className={`text-3xl font-bold mb-2 ${strategy.totalPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {strategy.totalPnl >= 0 ? '+' : ''}₹{Math.round(strategy.totalPnl).toLocaleString()}
+                    <div className={`text-3xl font-bold mb-2 ${strategy.pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {strategy.pnl >= 0 ? '+' : ''}₹{Math.round(strategy.pnl).toLocaleString()}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Profit Factor: {strategy.profitFactor.toFixed(2)}
+                      Total P&L
                     </div>
                   </div>
                 </div>
@@ -388,7 +384,7 @@ export default function ComparisonPage() {
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <span className="font-medium">Conservative</span>
-                  <span className="font-bold text-gray-600">< 10%</span>
+                  <span className="font-bold text-gray-600">&lt; 10%</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <span className="font-medium">Moderate</span>

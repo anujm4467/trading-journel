@@ -465,7 +465,7 @@ export function DashboardOverview() {
               Strategy Distribution
             </CardTitle>
             <CardDescription className="text-gray-600 dark:text-gray-400">
-              Your trading strategies breakdown
+              Your trading strategies breakdown (all time data)
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
@@ -499,15 +499,30 @@ export function DashboardOverview() {
                   </ResponsiveContainer>
                 </div>
                 <div className="space-y-3 mt-4">
-                  {data.strategyDistribution.map((strategy, index) => (
-                    <div key={index} className="flex items-center justify-between text-sm p-2 rounded-lg bg-gray-50/50 dark:bg-gray-700/50">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: strategy.color }} />
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{strategy.name}</span>
+                  {data.strategyDistribution.map((strategy, index) => {
+                    // Find the corresponding strategy performance data to get trade count
+                    const strategyData = data.strategyPerformance?.find(s => s.strategy === strategy.name)
+                    const tradeCount = strategyData?.trades || 0
+                    const isMaxTrades = data.overallStats?.maxTradesStrategy?.name === strategy.name
+                    
+                    return (
+                      <div key={index} className={`flex items-center justify-between text-sm p-2 rounded-lg ${isMaxTrades ? 'bg-blue-50/50 dark:bg-blue-700/50 border border-blue-200 dark:border-blue-600' : 'bg-gray-50/50 dark:bg-gray-700/50'}`}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: strategy.color }} />
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-900 dark:text-gray-100">{strategy.name}</span>
+                            {isMaxTrades && (
+                              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Most Used</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-gray-600 dark:text-gray-400 font-medium">₹{Math.round(strategy.pnl).toLocaleString()}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{tradeCount} trades</div>
+                        </div>
                       </div>
-                      <span className="text-gray-600 dark:text-gray-400 font-medium">₹{Math.round(strategy.pnl).toLocaleString()}</span>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </>
             ) : (
@@ -582,41 +597,42 @@ export function DashboardOverview() {
               Quick Stats
             </CardTitle>
             <CardDescription className="text-gray-600 dark:text-gray-400">
-              Key performance indicators
+              Overall performance indicators (all time)
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-4">
-              <div className={`text-center p-4 rounded-lg border ${data.overview.totalNetPnl >= 0 ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-100 dark:border-green-800' : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-100 dark:border-red-800'}`}>
-                <div className={`text-2xl font-bold ${data.overview.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {data.overview.totalNetPnl >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl).toLocaleString()}
+              <div className={`text-center p-4 rounded-lg border ${data.overallStats?.totalNetPnl && data.overallStats.totalNetPnl >= 0 ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-100 dark:border-green-800' : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-100 dark:border-red-800'}`}>
+                <div className={`text-2xl font-bold ${data.overallStats?.totalNetPnl && data.overallStats.totalNetPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {data.overallStats?.totalNetPnl ? (data.overallStats.totalNetPnl >= 0 ? '+' : '') : ''}₹{Math.round(data.overallStats?.totalNetPnl || 0).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Total P&L</div>
               </div>
               
               <div className="grid grid-cols-2 gap-3">
                 <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600">
-                  <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{data.overview.winRate.toFixed(1)}%</div>
+                  <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{data.overallStats?.winRate?.toFixed(1) || '0.0'}%</div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">Win Rate</div>
                 </div>
                 <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600">
-                  <div className="text-lg font-bold text-purple-600 dark:text-purple-400">{data.overview.totalTrades}</div>
+                  <div className="text-lg font-bold text-purple-600 dark:text-purple-400">{data.overallStats?.totalTrades || 0}</div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">Total Trades</div>
                 </div>
               </div>
 
-              <div className={`text-center p-3 rounded-lg border ${data.overview.totalTrades > 0 ? (data.overview.totalNetPnl / data.overview.totalTrades >= 0 ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-100 dark:border-green-800' : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-100 dark:border-red-800') : 'bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-600'}`}>
-                <div className={`text-lg font-bold ${data.overview.totalTrades > 0 ? (data.overview.totalNetPnl / data.overview.totalTrades >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') : 'text-gray-600 dark:text-gray-400'}`}>
-                  {data.overview.totalTrades > 0 ? (
-                    <>
-                      {data.overview.totalNetPnl / data.overview.totalTrades >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl / data.overview.totalTrades).toLocaleString()}
-                    </>
-                  ) : (
-                    '₹0'
-                  )}
+              <div className={`text-center p-3 rounded-lg border ${data.overallStats?.avgTrade && data.overallStats.avgTrade >= 0 ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-100 dark:border-green-800' : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-100 dark:border-red-800'}`}>
+                <div className={`text-lg font-bold ${data.overallStats?.avgTrade && data.overallStats.avgTrade >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {data.overallStats?.avgTrade ? (data.overallStats.avgTrade >= 0 ? '+' : '') : ''}₹{Math.round(data.overallStats?.avgTrade || 0).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Avg Trade</div>
               </div>
+
+              {data.overallStats?.maxTradesStrategy && data.overallStats.maxTradesStrategy.count > 0 && (
+                <div className="text-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                  <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{data.overallStats.maxTradesStrategy.count}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Max Trades: {data.overallStats.maxTradesStrategy.name}</div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
