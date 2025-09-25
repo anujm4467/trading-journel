@@ -196,22 +196,16 @@ export function DashboardOverview() {
 
         <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Trade</CardTitle>
-            <Activity className="h-4 w-4 text-purple-500" />
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Best Trade</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent className="pt-0">
-            <div className={`text-3xl font-bold ${data.overview.totalTrades > 0 ? (data.overview.totalNetPnl / data.overview.totalTrades >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') : 'text-gray-600 dark:text-gray-400'}`}>
-              {data.overview.totalTrades > 0 ? (
-                <>
-                  {data.overview.totalNetPnl / data.overview.totalTrades >= 0 ? '+' : ''}₹{Math.round(data.overview.totalNetPnl / data.overview.totalTrades).toLocaleString()}
-                </>
-              ) : (
-                '₹0'
-              )}
+            <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+              +₹{Math.round(data.overview.averageWin).toLocaleString()}
             </div>
             <div className="flex items-center text-sm mt-1">
               <span className="text-gray-600 dark:text-gray-400">
-                per trade
+                highest single trade
               </span>
             </div>
           </CardContent>
@@ -256,16 +250,16 @@ export function DashboardOverview() {
 
         <Card className="hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Charges</CardTitle>
-            <Activity className="h-4 w-4 text-amber-500" />
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Worst Trade</CardTitle>
+            <TrendingUp className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
-              ₹{data.overview.totalTrades > 0 ? Math.round(data.overview.totalCharges / data.overview.totalTrades).toLocaleString() : '0'}
+            <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+              -₹{Math.round(Math.abs(data.overview.averageLoss)).toLocaleString()}
             </div>
             <div className="flex items-center text-sm mt-1">
               <span className="text-gray-600 dark:text-gray-400">
-                per trade
+                largest single loss
               </span>
             </div>
           </CardContent>

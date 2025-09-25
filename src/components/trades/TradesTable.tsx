@@ -618,10 +618,12 @@ export function TradesTable() {
                     {trade.exitPrice ? formatCurrency(trade.exitPrice) : '--'}
                   </TableCell>
                   <TableCell>
-                    {trade.exitDate ? 
-                      `${Math.floor((new Date(trade.exitDate).getTime() - new Date(trade.entryDate).getTime()) / (1000 * 60 * 60))}h` : 
-                      '--'
-                    }
+                    {trade.exitDate ? (() => {
+                      const durationMinutes = Math.floor((new Date(trade.exitDate).getTime() - new Date(trade.entryDate).getTime()) / (1000 * 60))
+                      const hours = Math.floor(durationMinutes / 60)
+                      const minutes = durationMinutes % 60
+                      return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
+                    })() : '--'}
                   </TableCell>
                   <TableCell className="text-right">
                     {grossPnl !== null ? (

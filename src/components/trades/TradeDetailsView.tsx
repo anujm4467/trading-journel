@@ -563,7 +563,11 @@ export function TradeDetailsView({ trade, onExit }: TradeDetailsViewProps) {
               <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                 <span className="text-slate-600 dark:text-slate-400 font-medium">Holding Duration</span>
                 <span className="font-bold text-slate-900 dark:text-slate-100">
-                  {Math.floor(trade.holdingDuration / 60)}h {trade.holdingDuration % 60}m
+                  {(() => {
+                    const hours = Math.floor(trade.holdingDuration / 60)
+                    const minutes = trade.holdingDuration % 60
+                    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
+                  })()}
                 </span>
               </div>
             )}
